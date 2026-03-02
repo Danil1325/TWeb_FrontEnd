@@ -1,14 +1,12 @@
 import React from 'react'
 import './App.css'
-import Header from './Components/Header'
-import {Footer} from "./Components/Footer";
+import { Layout } from './Components/Layout'
 
 function App(): React.ReactElement {
   return (
-    <>
-      <Header />
-      <Footer />
-    </>
+    <Layout>
+      <main />
+    </Layout>
   )
 }
 
