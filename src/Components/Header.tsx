@@ -1,15 +1,13 @@
 import React from 'react'
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { AiOutlineUser } from "react-icons/ai"
 import './header.scss'
 
-type NavItem = { name: string; href: string; current: boolean }
-
-const navigation: NavItem[] = [
+const navigation = [
     { name: 'Dashboard', href: '#', current: true },
     { name: 'Team', href: '#', current: false },
-    { name: 'Projects', href: '#', current: false },
-    { name: 'Calendar', href: '#', current: false },
+    { name: 'Blog', href: '#', current: false },
 ]
 
 function classNames(...classes: Array<string | false | null | undefined>) {
@@ -21,9 +19,9 @@ function Header(): React.ReactElement {
         <>
             <Disclosure
                 as="nav"
-                className="relative base-color after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-white/10"
+                className="relative base-color after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-white/10 border-1 rounded-3xl m-4"
             >
-                <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
+                <div className="w-full px-2 sm:px-6 lg:px-8">
                     <div className="relative flex h-16 items-center justify-between">
                         <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
                             {/* Mobile menu button*/}
@@ -34,7 +32,7 @@ function Header(): React.ReactElement {
                                 <XMarkIcon aria-hidden="true" className="hidden size-6 group-data-open:block" />
                             </DisclosureButton>
                         </div>
-                        <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
+                        <div className="flex flex-1 items-center justify-start">
                             <div className="flex shrink-0 items-center">
                                 <img
                                     alt="Your Company"
@@ -42,28 +40,29 @@ function Header(): React.ReactElement {
                                     className="h-8 w-auto"
                                 />
                             </div>
-                            <div className="hidden sm:ml-6 sm:block">
-                                <div className="flex space-x-4">
-                                    {navigation.map((item) => (
-                                        <a
-                                            key={item.name}
-                                            href={item.href}
-                                            aria-current={item.current ? 'page' : undefined}
-                                            className={classNames(
-                                                item.current ? 'bg-gray-950/50 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white',
-                                                'rounded-md px-3 py-2 text-sm font-medium',
-                                            )}
-                                        >
-                                            {item.name}
-                                        </a>
-                                    ))}
-                                </div>
+                        </div>
+
+                        <div className="hidden sm:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                            <div className="flex space-x-4">
+                                {navigation.map((item) => (
+                                    <a
+                                        key={item.name}
+                                        href={item.href}
+                                        aria-current={item.current ? 'page' : undefined}
+                                        className={classNames(
+                                            item.current ? 'text-black hover:text-indigo-500' : 'text-black hover:bg-white/5 hover:text-indigo-500',
+                                            'rounded-md px-3 py-2 text-sm font-medium',
+                                        )}
+                                    >
+                                        {item.name}
+                                    </a>
+                                ))}
                             </div>
                         </div>
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+                        <div className="ml-auto flex items-center pr-2 sm:pr-0">
                             <button
                                 type="button"
-                                className="relative rounded-full p-1 text-gray-400 hover:text-white focus:outline-2 focus:outline-offset-2 focus:outline-indigo-500"
+                                className="relative rounded-full p-1 text-black hover:text-indigo-500 focus:outline-2 focus:outline-offset-2 focus:outline-indigo-500"
                             >
                                 <span className="absolute -inset-1.5" />
                                 <span className="sr-only">View notifications</span>
@@ -75,21 +74,18 @@ function Header(): React.ReactElement {
                                 <MenuButton className="relative flex rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
                                     <span className="absolute -inset-1.5" />
                                     <span className="sr-only">Open user menu</span>
-                                    <img
-                                        alt=""
-                                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                                        className="size-8 rounded-full bg-gray-800 outline -outline-offset-1 outline-white/10"
-                                    />
+                                    <a className={'text-indigo-500 bg-white rounded-2xl p-1 flex items-center gap-2'}>Log in <AiOutlineUser />
+                                    </a>
                                 </MenuButton>
 
                                 <MenuItems
                                     transition
-                                    className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-gray-800 py-1 outline -outline-offset-1 outline-white/10 transition data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
+                                    className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md base-color py-1 outline -outline-offset-1 outline-white/10 transition data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
                                 >
                                     <MenuItem>
                                         <a
                                             href="#"
-                                            className="block px-4 py-2 text-sm text-gray-300 data-focus:bg-white/5 data-focus:outline-hidden"
+                                            className="block px-4 py-2 text-sm base-color text-black data-focus:bg-white/5 data-focus:outline-hidden hover:text-indigo-500"
                                         >
                                             Your profile
                                         </a>
@@ -97,7 +93,7 @@ function Header(): React.ReactElement {
                                     <MenuItem>
                                         <a
                                             href="#"
-                                            className="block px-4 py-2 text-sm text-gray-300 data-focus:bg-white/5 data-focus:outline-hidden"
+                                            className="block px-4 py-2 text-sm base-color text-black data-focus:bg-white/5 data-focus:outline-hidden hover:text-indigo-500"
                                         >
                                             Settings
                                         </a>
@@ -105,7 +101,7 @@ function Header(): React.ReactElement {
                                     <MenuItem>
                                         <a
                                             href="#"
-                                            className="block px-4 py-2 text-sm text-gray-300 data-focus:bg-white/5 data-focus:outline-hidden"
+                                            className="block px-4 py-2 text-sm base-color text-black data-focus:bg-white/5 data-focus:outline-hidden hover:text-indigo-500"
                                         >
                                             Sign out
                                         </a>
