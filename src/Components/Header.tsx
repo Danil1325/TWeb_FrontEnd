@@ -4,8 +4,18 @@ import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { AiOutlineUser } from "react-icons/ai"
 import './header.scss'
 
-const navigation = [
+<<<<<<< HEAD:src/Components/Header.tsx
+type NavItem = { name: string; href: string; current: boolean }
+
+const navigation: NavItem[] = [
     { name: 'Dashboard', href: '#', current: true },
+=======
+const navigation = [
+    { name: 'Home', href: '#', current: true },
+    { name: 'About', href: '#', current: false },
+    { name: 'Shop', href: '#', current: false },
+    { name: 'Pages', href: '#', current: false },
+>>>>>>> 7678e441cdeee6c9512d174bce31b7c6ac4ed756:src/Components/Header.jsx
     { name: 'Team', href: '#', current: false },
     { name: 'Blog', href: '#', current: false },
 ]
