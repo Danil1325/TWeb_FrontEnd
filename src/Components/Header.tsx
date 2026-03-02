@@ -1,19 +1,22 @@
+import React from 'react'
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import './header.scss'
 
-const navigation = [
+type NavItem = { name: string; href: string; current: boolean }
+
+const navigation: NavItem[] = [
     { name: 'Dashboard', href: '#', current: true },
     { name: 'Team', href: '#', current: false },
     { name: 'Projects', href: '#', current: false },
     { name: 'Calendar', href: '#', current: false },
 ]
 
-function classNames(...classes) {
+function classNames(...classes: Array<string | false | null | undefined>) {
     return classes.filter(Boolean).join(' ')
 }
 
-function Header() {
+function Header(): React.ReactElement {
     return (
         <>
             <Disclosure
@@ -137,4 +140,4 @@ function Header() {
     );
 }
 
-export default Header;
+export default Header
