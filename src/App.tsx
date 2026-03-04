@@ -5,6 +5,7 @@ import { CartProvider } from './app/context/CartContext';
 import { Layout } from './app/Components/Layout';
 import { Home } from './app/pages/Home';
 import { Products } from './app/pages/Products';
+import { ProductDetails } from './app/pages/ProductDetails';
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
         <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
         </Routes>
       </Layout>
       <Toaster position="top-right" richColors />
