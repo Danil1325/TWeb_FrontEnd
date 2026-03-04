@@ -1,9 +1,9 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { CartProvider } from './context/CartContext';
-import { Layout } from './Components/Layout';
-import { Home } from './pages/Home';
+import { CartProvider } from './app/context/CartContext';
+import { Layout } from './app/Components/Layout';
+import { Home } from './app/pages/Home';
 
 export default function App() {
   return (
