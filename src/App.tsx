@@ -1,22 +1,19 @@
-import React from 'react'
-import './App.css'
-import { Layout } from './Components/Layout'
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { CartProvider } from './context/CartContext';
+import { Layout } from './Components/Layout';
 import { Home } from './pages/Home';
-import {CartProvider} from './context/CartContext';
 
-function App(): React.ReactElement {
+export default function App() {
   return (
-    <BrowserRouter>
-      <CartProvider>
-        <Layout>
-          <Routes>
-              <Route path="/" element={<Home />} />
-          </Routes>
-        </Layout>
-      </CartProvider>
-    </BrowserRouter>
-  )
+    <CartProvider>
+      <Layout>
+        <Routes>
+            <Route path="/" element={<Home />} />
+        </Routes>
+      </Layout>
+      <Toaster position="top-right" richColors />
+    </CartProvider>
+  );
 }
-
-export default App
