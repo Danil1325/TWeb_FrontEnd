@@ -1,13 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, LogIn } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const Login: React.FC = () => {
     const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
 
     const handleSubmit: NonNullable<React.ComponentProps<'form'>['onSubmit']> = (e) => {
         e.preventDefault();
-        navigate('/account');
+        setError('');
+
+        if (email === 'admin@admin.com' && password === 'admin') {
+            toast.success('Login successful! Welcome Admin');
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userEmail', email);
+            navigate('/dashboard');
+        } else {
+            setError('Invalid email or password. Try admin@admin.com / admin');
+            toast.error('Invalid credentials');
+        }
     };
 
     return (
@@ -21,6 +35,13 @@ export const Login: React.FC = () => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-8">
+                        {error && (
+                            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                <p className="text-sm text-red-700">{error}</p>
+                            </div>
+                        )}
+                        
                         <div className="mb-6">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Email Address
@@ -30,6 +51,8 @@ export const Login: React.FC = () => {
                                 <input
                                     type="email"
                                     name="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     required
                                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     placeholder="your@email.com"
@@ -46,6 +69,8 @@ export const Login: React.FC = () => {
                                 <input
                                     type="password"
                                     name="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     required
                                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     placeholder="••••••••"
