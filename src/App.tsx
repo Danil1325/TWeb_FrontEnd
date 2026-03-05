@@ -12,6 +12,7 @@ import { Dashboard } from './app/pages/admin/Dashboard';
 import { About } from './app/pages/About';
 import { Support } from './app/pages/Support';
 import { Policies } from './app/pages/Policies';
+import Blog  from './app/pages/Blog';
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
                 <Route path="/about" element={<About />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="/policies" element={<Policies />} />
+                <Route path="/blog" element={<Blog />} />
               </Routes>
             </Layout>
           }
