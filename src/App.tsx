@@ -7,6 +7,7 @@ import { Home } from './app/pages/Home';
 import { Products } from './app/pages/Products';
 import { ProductDetails } from './app/pages/ProductDetails';
 import { Login } from './app/pages/Login';
+import { Register } from './app/pages/Register';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
             <Route path="/products" element={<Products />} />
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
         </Routes>
       </Layout>
       <Toaster position="top-right" richColors />
