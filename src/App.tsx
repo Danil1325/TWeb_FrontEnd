@@ -9,6 +9,8 @@ import { ProductDetails } from './app/pages/ProductDetails';
 import { Login } from './app/pages/Login';
 import { Register } from './app/pages/Register';
 import { Dashboard } from './app/pages/admin/Dashboard';
+import { About } from './app/pages/About';
+
 
 export default function App() {
   return (
@@ -25,6 +27,7 @@ export default function App() {
                 <Route path="/product/:id" element={<ProductDetails />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/about" element={<About />} />
               </Routes>
             </Layout>
           }
