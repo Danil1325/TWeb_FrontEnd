@@ -1,11 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal, ShoppingCart } from 'lucide-react';
 import { products, categories } from '../data/products';
-import { ProductCard } from '../Components/ProductCard';
+import { useCart } from '../context/CartContext';
+import { toast } from 'sonner';
 
 export const Products: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const { addToCart } = useCart();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'All Products');
   const [priceRange, setPriceRange] = useState({ min: 0, max: 100 });
@@ -31,15 +34,24 @@ export const Products: React.FC = () => {
   }, [searchTerm, selectedCategory, priceRange, stockFilter, prescriptionFilter]);
 
   const handleAddToCart = (product: typeof products[0]) => {
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image
+    });
+    toast.success(`${product.name} added to cart`);
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Product Catalog</h1>
         <p className="text-gray-600">Browse our comprehensive range of pharmaceutical products</p>
       </div>
 
+      {/* Search and Filter Toggle */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -48,7 +60,7 @@ export const Products: React.FC = () => {
             placeholder="Search products..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <button
@@ -61,6 +73,7 @@ export const Products: React.FC = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
+        {/* Sidebar Filters */}
         <aside className={`lg:w-64 ${showFilters ? 'block' : 'hidden lg:block'}`}>
           <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-24">
             <h3 className="font-semibold mb-4">Categories</h3>
@@ -71,7 +84,7 @@ export const Products: React.FC = () => {
                   onClick={() => setSelectedCategory(category)}
                   className={`w-full text-left px-3 py-2 rounded ${
                     selectedCategory === category
-                      ? 'bg-indigo-500 text-white font-semibold'
+                      ? 'bg-blue-100 text-blue-600 font-semibold'
                       : 'hover:bg-gray-100'
                   }`}
                 >
@@ -166,6 +179,7 @@ export const Products: React.FC = () => {
           </div>
         </aside>
 
+        {/* Products Grid */}
         <div className="flex-1">
           <div className="mb-4 flex justify-between items-center">
             <p className="text-gray-600">
@@ -175,12 +189,60 @@ export const Products: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredProducts.map(product => (
-              <ProductCard
+              <div
                 key={product.id}
-                product={product}
-                showActions
-                stockVariant="quantity"
-              />
+                className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition flex flex-col"
+              >
+                <Link to={`/product/${product.id}`} className="block">
+                  <div className="aspect-square overflow-hidden bg-gray-100">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover hover:scale-105 transition"
+                    />
+                  </div>
+                </Link>
+                <div className="p-4 flex-1 flex flex-col">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="text-xs text-blue-600 font-semibold">{product.category}</div>
+                    {product.prescriptionRequired && (
+                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                        Rx
+                      </span>
+                    )}
+                  </div>
+                  <Link to={`/product/${product.id}`}>
+                    <h3 className="font-semibold mb-2 hover:text-blue-600">{product.name}</h3>
+                  </Link>
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">{product.description}</p>
+                  <div className="text-xs text-gray-500 mb-3">
+                    <p>Manufacturer: {product.manufacturer}</p>
+                    {product.dosage && <p>Dosage: {product.dosage}</p>}
+                  </div>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-xl font-bold text-blue-600">${product.price}</span>
+                    <span className={`text-xs px-2 py-1 rounded ${product.inStock ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {product.inStock ? `${product.stockQuantity} in stock` : 'Out of Stock'}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link
+                      to={`/product/${product.id}`}
+                      className="flex-1 px-4 py-2 text-center border border-blue-600 text-blue-600 rounded hover:bg-blue-50"
+                    >
+                      Details
+                    </Link>
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      disabled={!product.inStock}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
 
@@ -195,7 +257,7 @@ export const Products: React.FC = () => {
                   setStockFilter('all');
                   setPrescriptionFilter('all');
                 }}
-                className="mt-4 text-indigo-500 hover:text-indigo-500"
+                className="mt-4 text-blue-600 hover:text-blue-700"
               >
                 Clear all filters
               </button>
