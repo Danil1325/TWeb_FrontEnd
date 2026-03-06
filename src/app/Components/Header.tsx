@@ -1,4 +1,3 @@
-import { BellIcon } from "@heroicons/react/24/outline";
 import { AiOutlineUser } from "react-icons/ai";
 import { Link } from "react-router-dom";
 // @ts-ignore
@@ -22,7 +21,9 @@ function classNames(...classes: Array<string | boolean | undefined>) {
 }
 
 export default function Header() {
-    const { totalItems } = useCart();
+  const { totalItems } = useCart();
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+
   return (
     <nav className="relative bg-indigo-500 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-white/10 border rounded-3xl m-4">
       <div className="w-full px-2 sm:px-6 lg:px-8">
@@ -71,18 +72,30 @@ export default function Header() {
                   </span>
                 )}
               </Link>
-              <Link
-                to="/login"
-                className="text-indigo-500 bg-gray-100 rounded-2xl px-3 py-1 flex items-center gap-2"
-              >
-                Log in <AiOutlineUser />
-              </Link>
-              <Link
-                to="/register"
-                className="bg-white text-indigo-500 rounded-2xl px-3 py-1"
-              >
-                Register
-              </Link>
+
+              {isLoggedIn ? (
+                <Link
+                  to="/account"
+                  className="text-indigo-500 bg-gray-100 rounded-2xl px-3 py-1 flex items-center gap-2"
+                >
+                  Account <AiOutlineUser />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="text-indigo-500 bg-gray-100 rounded-2xl px-3 py-1 flex items-center gap-2"
+                  >
+                    Log in <AiOutlineUser />
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="bg-white text-indigo-500 rounded-2xl px-3 py-1"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { CartProvider } from './app/context/CartContext';
 import { Layout } from './app/Components/Layout';
@@ -14,6 +14,12 @@ import { Support } from './app/pages/Support';
 import { Policies } from './app/pages/Policies';
 import  Blog   from './app/pages/Blog';
 import { Checkout } from './app/pages/Checkout';
+import { Account } from './app/pages/Account';
+
+function AccountRouteGuard() {
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  return isLoggedIn ? <Account /> : <Navigate to="/login" replace />;
+}
 
 export default function App() {
   return (
@@ -30,6 +36,7 @@ export default function App() {
                 <Route path="/product/:id" element={<ProductDetails />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/account" element={<AccountRouteGuard />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="/policies" element={<Policies />} />

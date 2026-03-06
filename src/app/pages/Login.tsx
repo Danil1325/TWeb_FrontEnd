@@ -13,15 +13,23 @@ export const Login: React.FC = () => {
         e.preventDefault();
         setError('');
 
+        if (!email || !password) {
+            setError('Please enter both email and password.');
+            toast.error('Missing credentials');
+            return;
+        }
+
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userEmail', email);
+
         if (email === 'admin@admin.com' && password === 'admin') {
             toast.success('Login successful! Welcome Admin');
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('userEmail', email);
             navigate('/dashboard');
-        } else {
-            setError('Invalid email or password. Try admin@admin.com / admin');
-            toast.error('Invalid credentials');
+            return;
         }
+
+        toast.success('Login successful!');
+        navigate('/account');
     };
 
     return (
