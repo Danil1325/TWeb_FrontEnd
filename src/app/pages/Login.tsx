@@ -24,7 +24,7 @@ export const Login: React.FC = () => {
 
         if (email === 'admin@admin.com' && password === 'admin') {
             toast.success('Login successful! Welcome Admin');
-            navigate('/dashboard');
+            navigate('/admin/dashboard');
             return;
         }
 

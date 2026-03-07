@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Package, Clock, CheckCircle, XCircle, Truck, FileText } from 'lucide-react';
+import { User, Package, Clock, CheckCircle, XCircle, Truck, FileText, LogOut } from 'lucide-react';
 
 interface Order {
     id: string;
@@ -52,6 +52,12 @@ export const Account: React.FC = () => {
         email: 'john@pharmacy.com'
     };
     const [activeTab, setActiveTab] = useState<'orders' | 'profile'>('orders');
+
+    const handleLogout = () => {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userEmail');
+        window.location.href = '/login';
+    };
 
     const getStatusIcon = (status: Order['status']) => {
         switch (status) {
@@ -237,6 +243,13 @@ export const Account: React.FC = () => {
                         </button>
                         <button className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">
                             Change Password
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center gap-2"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            Logout
                         </button>
                     </div>
                 </div>
