@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Package, Users, TrendingUp, BarChart3 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Package, Users, TrendingUp, BarChart3 } from 'lucide-react';
+
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -12,15 +12,6 @@ export const Dashboard: React.FC = () => {
             navigate('/login');
         }
     }, [navigate]);
-
-    const handleLogout = () => {
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userEmail');
-        toast.success('Logged out successfully');
-        navigate('/login');
-    };
-
-    const userEmail = localStorage.getItem('userEmail') || 'Admin';
 
     const stats = [
         {
@@ -50,30 +41,33 @@ export const Dashboard: React.FC = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-100 py-8 px-4">
+     
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-4xl font-bold text-gray-900">Admin Dashboard</h1>
-                        <p className="text-gray-600 mt-2">Welcome back, {userEmail}</p>
-                    </div>
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition"
-                    >
-                        <LogOut className="w-5 h-5" />
-                        Logout
-                    </button>
-                </div>
-
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
+                    {/* Stats Cards */}
+                    <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        {stats.map((stat, index) => {
+                            const Icon = stat.icon;
+                            return (
+                                <div key={index} className="bg-white rounded-lg shadow p-6">
+                                    <div className="flex items-center">
+                                        <div className={`p-3 rounded-full ${stat.color}`}>
+                                            <Icon className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div className="ml-4">
+                                            <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                                            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 
             </div>
-        </div>
+
     );
 };
