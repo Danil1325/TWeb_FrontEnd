@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Package, Clock, CheckCircle, XCircle, Truck, FileText, LogOut } from 'lucide-react';
+import { User, Package, Truck, FileText, LogOut } from 'lucide-react';
 
 interface Order {
     id: string;
@@ -48,7 +48,7 @@ export const Account: React.FC = () => {
     const user = {
         name: 'John Doe',
         pharmacyName: 'Central Pharmacy',
-        pharmacyLicense: 'PH-2024-XXXXX',
+        pharmacyLicense: 'PH-2024-XXXX',
         email: 'john@pharmacy.com'
     };
     const [activeTab, setActiveTab] = useState<'orders' | 'profile'>('orders');
@@ -56,24 +56,9 @@ export const Account: React.FC = () => {
     const handleLogout = () => {
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('userEmail');
+        localStorage.removeItem('userType');
         window.location.href = '/login';
     };
-
-    const getStatusIcon = (status: Order['status']) => {
-        switch (status) {
-            case 'delivered':
-                return <CheckCircle className="w-5 h-5 text-green-600" />;
-            case 'shipped':
-                return <Truck className="w-5 h-5 text-indigo-500" />;
-            case 'processing':
-                return <Clock className="w-5 h-5 text-yellow-600" />;
-            case 'pending':
-                return <Clock className="w-5 h-5 text-gray-600" />;
-            case 'cancelled':
-                return <XCircle className="w-5 h-5 text-red-600" />;
-        }
-    };
-
     const getStatusColor = (status: Order['status']) => {
         switch (status) {
             case 'delivered':
@@ -92,7 +77,7 @@ export const Account: React.FC = () => {
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
 
-            <div className="bg-gradient-to-r from-indigo-500 to-indigo-500 rounded-lg p-8 mb-8 text-white">
+            <div className="bg-linear-to-r from-indigo-500 to-indigo-700 rounded-lg p-8 mb-8 text-white">
                 <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.name}</h1>
                 <p className="text-white">{user?.pharmacyName}</p>
                 <p className="text-sm text-white mt-1">License: {user?.pharmacyLicense}</p>
