@@ -36,8 +36,23 @@ export const Register: React.FC = () => {
 
         setLoading(true);
         try {
+            const profilePayload = {
+                name: formData.name,
+                email: formData.email,
+                pharmacyName: formData.pharmacyName,
+                pharmacyLicense: formData.pharmacyLicense,
+                phone: formData.phone,
+                address: formData.address,
+                city: formData.city,
+                state: formData.state,
+                zipCode: formData.zipCode,
+            };
+            localStorage.setItem('pharmacyProfile', JSON.stringify(profilePayload));
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userEmail', formData.email);
+            localStorage.setItem('userRole', 'pharmacy');
             toast.success('Registration successful! Welcome to PharmaWarehouse.');
-            navigate('/account');
+            navigate('/pharmacy/dashboard');
             // eslint-disable-next-line no-unused-vars,@typescript-eslint/no-unused-vars
         } catch (error) {
             toast.error('Registration failed. Please try again.');
