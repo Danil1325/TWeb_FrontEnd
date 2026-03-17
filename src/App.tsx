@@ -17,6 +17,9 @@ import { Policies } from "./app/pages/Policies";
 import Blog from "./app/pages/Blog";
 import { Checkout } from "./app/pages/Checkout";
 import { Account } from "./app/pages/Account";
+import { PharmacyDashboard } from "./app/pages/pharmacy/Dashboard";
+import { PharmacyLayout } from "./app/Components/dashboard/PharmacyLayout";
+
 
 function AccountRouteGuard() {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
@@ -36,6 +39,17 @@ export default function App() {
                 <Route path="warehouse" element={<Warehouse />} />
               </Routes>
             </AdminLayout>
+          }
+        />
+
+        <Route
+          path="/pharmacy/*"
+          element={
+            <PharmacyLayout>
+              <Routes>
+                <Route path="dashboard" element={<PharmacyDashboard />} />
+              </Routes>
+            </PharmacyLayout>
           }
         />
 
