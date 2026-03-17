@@ -87,7 +87,70 @@ export const PharmacyDashboard: React.FC = () => {
         </div>
       </div>
 
-      
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {overviewCards.map((card) => {
+          const Icon = card.icon;
+
+          return (
+            <article key={card.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{card.label}</p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">{card.value}</p>
+                  <p className="mt-1 text-xs text-slate-500">{card.trend}</p>
+                </div>
+                <div className={`rounded-lg bg-gradient-to-r ${card.color} p-2`}>
+                  <Icon className="h-5 w-5 text-white" />
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">Pending actions</h3>
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">High priority</span>
+          </div>
+          <ul className="space-y-3">
+            {pendingActions.map((task) => (
+              <li key={task} className="flex items-start gap-3 rounded-lg bg-slate-50 p-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-500" />
+                <span className="text-sm text-slate-700">{task}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-3">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">Live order feed</h3>
+            <span className="text-xs text-slate-500">Updated every 5 min</span>
+          </div>
+          <div className="space-y-3">
+            {liveOrderFeed.map((order) => (
+              <div key={order.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 p-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-indigo-100 p-2">
+                    <Pill className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Order {order.id}</p>
+                    <p className="text-xs text-slate-500">ETA: {order.eta}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700">{order.status}</span>
+                  <span className="text-sm font-semibold text-slate-800">{order.amount}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </section>
   );
 };
