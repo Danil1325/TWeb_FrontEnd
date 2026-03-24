@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { LogOut, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import PharmacySidebar from "./PharmacySidebar";
 import { PharmacyProfile } from "../../pages/pharmacy/Profile";
 
@@ -10,6 +11,7 @@ interface PharmacyLayoutProps {
 export const PharmacyLayout: React.FC<PharmacyLayoutProps> = ({ children }) => {
   const [activePage, setActivePage] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
 
   const userEmail = localStorage.getItem("userEmail") || "Pharmacy User";
 
@@ -17,7 +19,7 @@ export const PharmacyLayout: React.FC<PharmacyLayoutProps> = ({ children }) => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userRole");
-    window.location.href = "/login";
+    navigate("/login", { replace: true });
   };
 
   return (

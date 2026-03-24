@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "./Slidebar";
 import { LogOut, User } from "lucide-react";
 
@@ -9,12 +10,13 @@ interface AdminLayoutProps {
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [activePage, setActivePage] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("userType");
     localStorage.removeItem("userEmail");
-    window.location.href = "/login";
+    navigate("/login", { replace: true });
   };
 
   return (
