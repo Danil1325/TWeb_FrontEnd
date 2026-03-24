@@ -20,7 +20,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="h-screen flex bg-gray-100">
       <Sidebar
         activePage={activePage}
         setActivePage={setActivePage}
@@ -29,7 +29,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Navbar */}
         <nav className="bg-white shadow-sm border-b">
           <div className="px-4 sm:px-6 lg:px-8">
@@ -57,7 +57,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </nav>
 
         {/* Content */}
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );

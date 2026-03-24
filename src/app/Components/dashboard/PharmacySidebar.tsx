@@ -43,7 +43,7 @@ export default function PharmacySidebar({
     <motion.div
       initial={false}
       animate={{ width: collapsed ? 80 : 280 }}
-      className="bg-white border-r border-slate-200 flex flex-col relative shadow-xl"
+      className="bg-white border-r border-slate-200 flex flex-col relative shadow-xl h-screen"
     >
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200">
@@ -79,7 +79,7 @@ export default function PharmacySidebar({
       </button>
 
       {/* Menu Items */}
-      <div className="flex-1 py-4">
+      <div className="flex-1 py-4 overflow-y-auto">
         <div className="space-y-1 px-3">
           {menuItems.map((item) => {
             const Icon = item.icon;
