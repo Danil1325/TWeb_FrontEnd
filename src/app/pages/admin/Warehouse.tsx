@@ -32,8 +32,9 @@ export const Warehouse: React.FC = () => {
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     const userType = localStorage.getItem("userType");
+    const userRole = localStorage.getItem("userRole");
 
-    if (!isLoggedIn || userType !== "warehouse") {
+    if (!isLoggedIn || (userType !== "warehouse" && userRole !== "warehouse")) {
       navigate("/login", { replace: true });
     }
   }, [navigate]);

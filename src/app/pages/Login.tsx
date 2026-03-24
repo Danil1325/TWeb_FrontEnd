@@ -21,11 +21,22 @@ export const Login: React.FC = () => {
 
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userEmail', email);
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userType');
 
         if (email === 'admin@admin.com' && password === 'admin') {
             localStorage.setItem('userRole', 'admin');
+            localStorage.setItem('userType', 'admin');
             toast.success('Login successful! Welcome Admin');
             navigate('/admin/dashboard');
+            return;
+        }
+
+        if (email === 'warehouse@warehouse.com' && password === 'warehouse') {
+            localStorage.setItem('userRole', 'warehouse');
+            localStorage.setItem('userType', 'warehouse');
+            toast.success('Login successful! Welcome Warehouse');
+            navigate('/admin/warehouse');
             return;
         }
 
