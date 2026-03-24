@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./Slidebar";
 import { LogOut, User } from "lucide-react";
 
@@ -11,10 +11,29 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [activePage, setActivePage] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    if (location.pathname === "/admin/users") {
+      setActivePage("users");
+      return;
+    }
+    setActivePage("dashboard");
+  }, [location.pathname]);
+
+  const handlePageChange = (page: string) => {
+    setActivePage(page);
+    const routeMap: Record<string, string> = {
+      dashboard: "/admin/dashboard",
+      users: "/admin/users",
+    };
+    navigate(routeMap[page] || "/admin/dashboard");
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("userType");
+    localStorage.removeItem("userRole");
     localStorage.removeItem("userEmail");
     navigate("/login", { replace: true });
   };
@@ -23,7 +42,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     <div className="h-screen flex bg-gray-100">
       <Sidebar
         activePage={activePage}
-        setActivePage={setActivePage}
+        setActivePage={handlePageChange}
         collapsed={collapsed}
         setCollapsed={setCollapsed}
       />

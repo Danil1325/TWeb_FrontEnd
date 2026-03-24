@@ -4,8 +4,6 @@ import {
   LayoutDashboard,
   Users,
   Store,
-  Share2,
-  Package,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -17,18 +15,16 @@ interface SidebarProps {
   setCollapsed: (collapsed: boolean) => void;
 }
 
-const menuItems = [
-  { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", badge: null },
-  { id: "users", icon: Users, label: "User Management", badge: "142" },
-  { id: "vendors", icon: Store, label: "Vendor Management", badge: "12" },
-  {
-    id: "affiliates",
-    icon: Share2,
-    label: "Affiliate Management",
-    badge: "48",
-  },
-  { id: "products", icon: Package, label: "Product Management", badge: null },
-];
+const getUserCount = () => {
+  const raw = localStorage.getItem("adminUsers");
+  if (!raw) return 3;
+  try {
+    const users = JSON.parse(raw);
+    return Array.isArray(users) ? users.length : 3;
+  } catch {
+    return 3;
+  }
+};
 
 export default function Sidebar({
   activePage,
@@ -36,6 +32,18 @@ export default function Sidebar({
   collapsed,
   setCollapsed,
 }: SidebarProps) {
+  const [usersCount, setUsersCount] = React.useState<number>(() => getUserCount());
+
+  React.useEffect(() => {
+    const id = window.setInterval(() => setUsersCount(getUserCount()), 1200);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const menuItems = [
+    { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", badge: null },
+    { id: "users", icon: Users, label: "User Management", badge: String(usersCount) },
+  ];
+
   return (
     <motion.div
       initial={false}

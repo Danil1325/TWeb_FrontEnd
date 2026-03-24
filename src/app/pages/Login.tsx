@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { seedUsers } from '../data/users';
 
 export const Login: React.FC = () => {
     const navigate = useNavigate();
@@ -37,6 +38,40 @@ export const Login: React.FC = () => {
             localStorage.setItem('userType', 'warehouse');
             toast.success('Login successful! Welcome Warehouse');
             navigate('/warehouse/dashboard');
+            return;
+        }
+
+        const pendingRaw = localStorage.getItem('pendingPharmacyRegistrations');
+        const pending = pendingRaw ? JSON.parse(pendingRaw) : [];
+        const isPending = pending.some((item: { email: string }) => item.email === email);
+
+        if (isPending) {
+            setError('Cererea farmaciei este in asteptare. Vei putea accesa contul dupa aprobare.');
+            toast.error('Cont in asteptare aprobare');
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userType');
+            return;
+        }
+
+        const usersRaw = localStorage.getItem('adminUsers');
+        const storedUsers = usersRaw ? JSON.parse(usersRaw) : seedUsers;
+        const approvedPharmacy = storedUsers.find(
+            (user: { email: string; password: string; role: string; status: string }) =>
+                user.email === email &&
+                user.password === password &&
+                user.role === 'Farmacie' &&
+                user.status === 'active'
+        );
+
+        if (!approvedPharmacy) {
+            setError('Credentiale invalide sau contul nu este aprobat.');
+            toast.error('Acces respins');
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userType');
             return;
         }
 

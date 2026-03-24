@@ -10,6 +10,7 @@ import { ProductDetails } from "./app/pages/ProductDetails";
 import { Login } from "./app/pages/Login";
 import { Register } from "./app/pages/Register";
 import { Dashboard } from "./app/pages/admin/Dashboard";
+import { UserManagementPage } from "./app/pages/admin/UserManagement";
 import { About } from "./app/pages/About";
 import { Support } from "./app/pages/Support";
 import { Policies } from "./app/pages/Policies";
@@ -62,6 +63,7 @@ export default function App() {
               <AdminLayout>
                 <Routes>
                   <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="users" element={<UserManagementPage />} />
                 </Routes>
               </AdminLayout>
             </AdminRouteGuard>
