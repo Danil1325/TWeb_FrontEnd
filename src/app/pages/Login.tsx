@@ -36,7 +36,7 @@ export const Login: React.FC = () => {
             localStorage.setItem('userRole', 'warehouse');
             localStorage.setItem('userType', 'warehouse');
             toast.success('Login successful! Welcome Warehouse');
-            navigate('/admin/warehouse');
+            navigate('/warehouse/dashboard');
             return;
         }
 

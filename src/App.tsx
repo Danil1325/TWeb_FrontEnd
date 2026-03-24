@@ -10,7 +10,6 @@ import { ProductDetails } from "./app/pages/ProductDetails";
 import { Login } from "./app/pages/Login";
 import { Register } from "./app/pages/Register";
 import { Dashboard } from "./app/pages/admin/Dashboard";
-import { Warehouse } from "./app/pages/admin/Warehouse";
 import { About } from "./app/pages/About";
 import { Support } from "./app/pages/Support";
 import { Policies } from "./app/pages/Policies";
@@ -19,11 +18,37 @@ import { Checkout } from "./app/pages/Checkout";
 import { Account } from "./app/pages/Account";
 import { PharmacyDashboard } from "./app/pages/pharmacy/Dashboard";
 import { PharmacyLayout } from "./app/Components/dashboard/PharmacyLayout";
+import { WarehouseLayout } from "./app/Components/dashboard/WarehouseLayout";
+import { WarehouseDashboard } from "./app/pages/warehouse/Dashboard";
 
 
 function AccountRouteGuard() {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   return isLoggedIn ? <Account /> : <Navigate to="/login" replace />;
+}
+
+function AdminRouteGuard({ children }: { children: React.ReactNode }) {
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const userType = localStorage.getItem("userType");
+  const userRole = localStorage.getItem("userRole");
+
+  return isLoggedIn && (userType === "admin" || userRole === "admin") ? (
+    <>{children}</>
+  ) : (
+    <Navigate to="/login" replace />
+  );
+}
+
+function WarehouseRouteGuard({ children }: { children: React.ReactNode }) {
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const userType = localStorage.getItem("userType");
+  const userRole = localStorage.getItem("userRole");
+
+  return isLoggedIn && (userType === "warehouse" || userRole === "warehouse") ? (
+    <>{children}</>
+  ) : (
+    <Navigate to="/login" replace />
+  );
 }
 
 export default function App() {
@@ -33,12 +58,29 @@ export default function App() {
         <Route
           path="/admin/*"
           element={
-            <AdminLayout>
-              <Routes>
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="warehouse" element={<Warehouse />} />
-              </Routes>
-            </AdminLayout>
+            <AdminRouteGuard>
+              <AdminLayout>
+                <Routes>
+                  <Route path="dashboard" element={<Dashboard />} />
+                </Routes>
+              </AdminLayout>
+            </AdminRouteGuard>
+          }
+        />
+
+        <Route
+          path="/warehouse/*"
+          element={
+            <WarehouseRouteGuard>
+              <WarehouseLayout>
+                <Routes>
+                  <Route path="dashboard" element={<WarehouseDashboard />} />
+                  <Route path="stock" element={<WarehouseDashboard />} />
+                  <Route path="deliveries" element={<WarehouseDashboard />} />
+                  <Route path="orders" element={<WarehouseDashboard />} />
+                </Routes>
+              </WarehouseLayout>
+            </WarehouseRouteGuard>
           }
         />
 
