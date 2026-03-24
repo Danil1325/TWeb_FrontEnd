@@ -1,19 +1,17 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
-  ClipboardList,
-  Package,
+  Boxes,
   Truck,
-  RotateCcw,
-  BarChart2,
+  ClipboardList,
   ChevronLeft,
   ChevronRight,
-  CrossIcon,
-  UserCircle,
+  Warehouse,
 } from "lucide-react";
 
-interface PharmacySidebarProps {
+interface WarehouseSidebarProps {
   activePage: string;
   setActivePage: (page: string) => void;
   collapsed: boolean;
@@ -21,23 +19,32 @@ interface PharmacySidebarProps {
 }
 
 const menuItems = [
-  { id: "dashboard",  icon: LayoutDashboard, label: "Dashboard",          badge: null },
-  { id: "orders",     icon: ClipboardList,   label: "Orders",              badge: "18"  },
-  { id: "stock",      icon: Package,         label: "Stock & Inventory",   badge: "7"   },
-  { id: "shipments",  icon: Truck,           label: "Receive Shipments",   badge: "3"   },
-  { id: "returns",    icon: RotateCcw,       label: "Returns",             badge: null  },
-  { id: "reports",    icon: BarChart2,       label: "Reports",             badge: null  },
-  { id: "profile",    icon: UserCircle,      label: "My Profile",          badge: null  },
+  { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", badge: null },
+  { id: "stock", icon: Boxes, label: "Stock", badge: "17" },
+  { id: "deliveries", icon: Truck, label: "Deliveries", badge: "3" },
+  { id: "orders", icon: ClipboardList, label: "Outgoing Orders", badge: "29" },
 ];
 
-export default function PharmacySidebar({
+export default function WarehouseSidebar({
   activePage,
   setActivePage,
   collapsed,
   setCollapsed,
-}: PharmacySidebarProps) {
-  const userEmail = localStorage.getItem("userEmail") || "pharmacy@example.com";
-  const initials = userEmail.slice(0, 2).toUpperCase();
+}: WarehouseSidebarProps) {
+  const location = useLocation();
+
+  React.useEffect(() => {
+    const pathMap: Record<string, string> = {
+      "/warehouse/dashboard": "dashboard",
+      "/warehouse/stock": "stock",
+      "/warehouse/deliveries": "deliveries",
+      "/warehouse/orders": "orders",
+    };
+    const page = pathMap[location.pathname];
+    if (page) {
+      setActivePage(page);
+    }
+  }, [location.pathname, setActivePage]);
 
   return (
     <motion.div
@@ -45,7 +52,6 @@ export default function PharmacySidebar({
       animate={{ width: collapsed ? 80 : 280 }}
       className="bg-white border-r border-slate-200 flex flex-col relative shadow-xl h-screen"
     >
-      {/* Logo */}
       <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200">
         <AnimatePresence mode="wait">
           {!collapsed && (
@@ -55,18 +61,17 @@ export default function PharmacySidebar({
               exit={{ opacity: 0 }}
               className="flex items-center gap-2"
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center">
-                <CrossIcon className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-emerald-600 flex items-center justify-center">
+                <Warehouse className="w-5 h-5 text-white" />
               </div>
-              <span className="text-sm font-semibold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent whitespace-nowrap">
-                Pharmacy Portal
+              <span className="bg-gradient-to-r from-cyan-600 to-emerald-600 bg-clip-text text-transparent">
+                Warehouse Panel
               </span>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Toggle Button */}
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors z-10 shadow-lg"
@@ -78,7 +83,6 @@ export default function PharmacySidebar({
         )}
       </button>
 
-      {/* Menu Items */}
       <div className="flex-1 py-4 overflow-y-auto">
         <div className="space-y-1 px-3">
           {menuItems.map((item) => {
@@ -95,7 +99,7 @@ export default function PharmacySidebar({
                   w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative
                   ${
                     isActive
-                      ? "bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-lg shadow-indigo-500/30"
+                      ? "bg-gradient-to-r from-cyan-500 to-emerald-600 text-white shadow-lg shadow-cyan-500/30"
                       : "text-slate-700 hover:bg-slate-100"
                   }
                 `}
@@ -115,11 +119,14 @@ export default function PharmacySidebar({
                 </AnimatePresence>
                 {item.badge && !collapsed && (
                   <span
-                    className={`ml-auto px-2 py-0.5 rounded-full text-xs ${
+                    className={`
+                    ml-auto px-2 py-0.5 rounded-full text-xs
+                    ${
                       isActive
                         ? "bg-white/20 text-white"
-                        : "bg-indigo-100 text-indigo-600"
-                    }`}
+                        : "bg-cyan-100 text-cyan-700"
+                    }
+                  `}
                   >
                     {item.badge}
                   </span>
@@ -130,11 +137,10 @@ export default function PharmacySidebar({
         </div>
       </div>
 
-      {/* Footer */}
       <div className="p-4 border-t border-slate-200">
         <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-semibold">{initials}</span>
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-emerald-600 flex items-center justify-center">
+            <span className="text-white text-xs">WH</span>
           </div>
           <AnimatePresence mode="wait">
             {!collapsed && (
@@ -142,10 +148,10 @@ export default function PharmacySidebar({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex-1 min-w-0"
+                className="flex-1"
               >
-                <div className="text-sm font-medium text-slate-900 truncate">Pharmacy User</div>
-                <div className="text-xs text-slate-500 truncate">{userEmail}</div>
+                <div className="text-sm text-slate-900">Warehouse Operator</div>
+                <div className="text-xs text-slate-500">warehouse@warehouse.com</div>
               </motion.div>
             )}
           </AnimatePresence>

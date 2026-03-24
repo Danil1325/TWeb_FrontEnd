@@ -4,8 +4,6 @@ import {
   LayoutDashboard,
   Users,
   Store,
-  Share2,
-  Package,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -17,18 +15,16 @@ interface SidebarProps {
   setCollapsed: (collapsed: boolean) => void;
 }
 
-const menuItems = [
-  { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", badge: null },
-  { id: "users", icon: Users, label: "User Management", badge: "142" },
-  { id: "vendors", icon: Store, label: "Vendor Management", badge: "12" },
-  {
-    id: "affiliates",
-    icon: Share2,
-    label: "Affiliate Management",
-    badge: "48",
-  },
-  { id: "products", icon: Package, label: "Product Management", badge: null },
-];
+const getUserCount = () => {
+  const raw = localStorage.getItem("adminUsers");
+  if (!raw) return 3;
+  try {
+    const users = JSON.parse(raw);
+    return Array.isArray(users) ? users.length : 3;
+  } catch {
+    return 3;
+  }
+};
 
 export default function Sidebar({
   activePage,
@@ -36,11 +32,23 @@ export default function Sidebar({
   collapsed,
   setCollapsed,
 }: SidebarProps) {
+  const [usersCount, setUsersCount] = React.useState<number>(() => getUserCount());
+
+  React.useEffect(() => {
+    const id = window.setInterval(() => setUsersCount(getUserCount()), 1200);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const menuItems = [
+    { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", badge: null },
+    { id: "users", icon: Users, label: "User Management", badge: String(usersCount) },
+  ];
+
   return (
     <motion.div
       initial={false}
       animate={{ width: collapsed ? 80 : 280 }}
-      className="bg-white border-r border-slate-200 flex flex-col relative shadow-xl"
+      className="bg-white border-r border-slate-200 flex flex-col relative shadow-xl h-screen"
     >
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200">
@@ -76,7 +84,7 @@ export default function Sidebar({
       </button>
 
       {/* Menu Items */}
-      <div className="flex-1 py-4">
+      <div className="flex-1 py-4 overflow-y-auto">
         <div className="space-y-1 px-3">
           {menuItems.map((item) => {
             const Icon = item.icon;

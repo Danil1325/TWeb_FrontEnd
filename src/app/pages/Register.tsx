@@ -37,8 +37,10 @@ export const Register: React.FC = () => {
         setLoading(true);
         try {
             const profilePayload = {
+                id: crypto.randomUUID(),
                 name: formData.name,
                 email: formData.email,
+                password: formData.password,
                 pharmacyName: formData.pharmacyName,
                 pharmacyLicense: formData.pharmacyLicense,
                 phone: formData.phone,
@@ -46,13 +48,26 @@ export const Register: React.FC = () => {
                 city: formData.city,
                 state: formData.state,
                 zipCode: formData.zipCode,
+                requestedAt: new Date().toISOString(),
+                status: 'pending',
             };
-            localStorage.setItem('pharmacyProfile', JSON.stringify(profilePayload));
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('userEmail', formData.email);
-            localStorage.setItem('userRole', 'pharmacy');
-            toast.success('Registration successful! Welcome to PharmaWarehouse.');
-            navigate('/pharmacy/dashboard');
+            const pendingRaw = localStorage.getItem('pendingPharmacyRegistrations');
+            const pending = pendingRaw ? JSON.parse(pendingRaw) : [];
+
+            const alreadyPending = pending.some((item: { email: string }) => item.email === formData.email);
+            if (alreadyPending) {
+                toast.error('Exista deja o cerere in asteptare pentru acest email.');
+                return;
+            }
+
+            localStorage.setItem('pendingPharmacyRegistrations', JSON.stringify([profilePayload, ...pending]));
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userType');
+
+            toast.success('Cererea a fost trimisa. Vei putea intra dupa aprobarea SuperAdmin.');
+            navigate('/login');
             // eslint-disable-next-line no-unused-vars,@typescript-eslint/no-unused-vars
         } catch (error) {
             toast.error('Registration failed. Please try again.');
