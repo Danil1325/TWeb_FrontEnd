@@ -12,6 +12,8 @@ import { Register } from "./app/pages/Register";
 import { Dashboard } from "./app/pages/admin/Dashboard";
 import { UserManagementPage } from "./app/pages/admin/UserManagement";
 import { WarehouseManagementPage } from "./app/pages/admin/WarehouseManagement";
+import { PharmacyStocksPage } from "./app/pages/admin/PharmacyStocks";
+import { PharmacyManagementPage } from "./app/pages/admin/PharmacyManagement";
 import { About } from "./app/pages/About";
 import { Support } from "./app/pages/Support";
 import { Policies } from "./app/pages/Policies";
@@ -66,6 +68,8 @@ export default function App() {
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="users" element={<UserManagementPage />} />
                   <Route path="warehouses" element={<WarehouseManagementPage />} />
+                  <Route path="pharmacy-management" element={<PharmacyManagementPage />} />
+                  <Route path="pharmacy-stocks" element={<PharmacyStocksPage />} />
                 </Routes>
               </AdminLayout>
             </AdminRouteGuard>

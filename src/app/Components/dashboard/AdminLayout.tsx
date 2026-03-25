@@ -22,6 +22,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       setActivePage("warehouses");
       return;
     }
+    if (location.pathname === "/admin/pharmacy-management") {
+      setActivePage("pharmacy-management");
+      return;
+    }
+    if (location.pathname === "/admin/pharmacy-stocks") {
+      setActivePage("pharmacy-stocks");
+      return;
+    }
     setActivePage("dashboard");
   }, [location.pathname]);
 
@@ -31,6 +39,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       dashboard: "/admin/dashboard",
       users: "/admin/users",
       warehouses: "/admin/warehouses",
+      "pharmacy-management": "/admin/pharmacy-management",
+      "pharmacy-stocks": "/admin/pharmacy-stocks",
     };
     navigate(routeMap[page] || "/admin/dashboard");
   };

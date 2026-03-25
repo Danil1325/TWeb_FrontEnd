@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Building2, Edit2, Plus, Trash2, Warehouse, X } from "lucide-react";
 import { AdminUser, users as fileUsers } from "../../../data/users";
+import { CustomSelect } from "../CustomSelect";
 
 interface WarehouseZones {
   reception: boolean;
@@ -280,14 +281,14 @@ const WarehouseFormModal: React.FC<{
           </section>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <select
+            <CustomSelect
               value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value as "active" | "inactive" })}
-              className="px-3 py-2 border rounded-lg"
-            >
-              <option value="active">Activ</option>
-              <option value="inactive">Inactiv</option>
-            </select>
+              onChange={(value) => setForm({ ...form, status: value as "active" | "inactive" })}
+              options={[
+                { label: "Activ", value: "active" },
+                { label: "Inactiv", value: "inactive" },
+              ]}
+            />
           </div>
 
           <div className="flex justify-end gap-3">
