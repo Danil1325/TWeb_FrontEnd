@@ -3,10 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
+  Warehouse,
+  Boxes,
+  ClipboardList,
   Store,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { users as seedUsers } from "../../data/users";
+
+const USERS_KEY = "adminUsers";
+const WAREHOUSES_KEY = "adminWarehouses";
 
 interface SidebarProps {
   activePage: string;
@@ -15,15 +22,40 @@ interface SidebarProps {
   setCollapsed: (collapsed: boolean) => void;
 }
 
-const getUserCount = () => {
-  const raw = localStorage.getItem("adminUsers");
-  if (!raw) return 3;
+const getStoredUsers = () => {
+  const raw = localStorage.getItem(USERS_KEY);
+  if (!raw) return seedUsers;
   try {
     const users = JSON.parse(raw);
-    return Array.isArray(users) ? users.length : 3;
+    return Array.isArray(users) ? users : seedUsers;
   } catch {
-    return 3;
+    return seedUsers;
   }
+};
+
+const getWarehouseCount = () => {
+  const raw = localStorage.getItem(WAREHOUSES_KEY);
+  if (!raw) return 1;
+  try {
+    const warehouses = JSON.parse(raw);
+    return Array.isArray(warehouses) && warehouses.length > 0 ? warehouses.length : 1;
+  } catch {
+    return 1;
+  }
+};
+
+const getSidebarCounts = () => {
+  const users = getStoredUsers();
+  const usersCount = users.length;
+  const pharmaciesCount = users.filter((user) => user.role === "Farmacie").length;
+  const warehouseCount = getWarehouseCount();
+
+  return {
+    usersCount,
+    warehouseCount,
+    pharmacyManagementCount: pharmaciesCount,
+    pharmacyStocksCount: pharmaciesCount,
+  };
 };
 
 export default function Sidebar({
@@ -32,16 +64,19 @@ export default function Sidebar({
   collapsed,
   setCollapsed,
 }: SidebarProps) {
-  const [usersCount, setUsersCount] = React.useState<number>(() => getUserCount());
+  const [counts, setCounts] = React.useState(() => getSidebarCounts());
 
   React.useEffect(() => {
-    const id = window.setInterval(() => setUsersCount(getUserCount()), 1200);
+    const id = window.setInterval(() => setCounts(getSidebarCounts()), 1200);
     return () => window.clearInterval(id);
   }, []);
 
   const menuItems = [
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", badge: null },
-    { id: "users", icon: Users, label: "User Management", badge: String(usersCount) },
+    { id: "users", icon: Users, label: "User Management", badge: String(counts.usersCount) },
+    { id: "warehouses", icon: Warehouse, label: "Warehouse Management", badge: String(counts.warehouseCount) },
+    { id: "pharmacy-management", icon: ClipboardList, label: "Farmacie Management", badge: String(counts.pharmacyManagementCount) },
+    { id: "pharmacy-stocks", icon: Boxes, label: "Pharmacy Stocks", badge: String(counts.pharmacyStocksCount) },
   ];
 
   return (

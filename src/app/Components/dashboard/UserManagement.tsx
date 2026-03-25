@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { AdminUser, seedAuditEvents, users, UserAuditEvent, UserRole } from "../../data/users";
+import { CustomSelect } from "./CustomSelect";
 
 interface UserFormData {
   name: string;
@@ -176,23 +177,23 @@ const UserFormModal: React.FC<{
               placeholder="Companie"
               className="px-3 py-2 border rounded-lg"
             />
-            <select
+            <CustomSelect
               value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })}
-              className="px-3 py-2 border rounded-lg"
-            >
-              <option value="SuperAdmin">SuperAdmin</option>
-              <option value="Warehouse">Warehouse</option>
-              <option value="Farmacie">Farmacie</option>
-            </select>
-            <select
+              onChange={(value) => setForm({ ...form, role: value as UserRole })}
+              options={[
+                { label: "SuperAdmin", value: "SuperAdmin" },
+                { label: "Warehouse", value: "Warehouse" },
+                { label: "Farmacie", value: "Farmacie" },
+              ]}
+            />
+            <CustomSelect
               value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value as "active" | "inactive" })}
-              className="px-3 py-2 border rounded-lg"
-            >
-              <option value="active">Activ</option>
-              <option value="inactive">Inactiv</option>
-            </select>
+              onChange={(value) => setForm({ ...form, status: value as "active" | "inactive" })}
+              options={[
+                { label: "Activ", value: "active" },
+                { label: "Inactiv", value: "inactive" },
+              ]}
+            />
           </div>
           <div className="flex justify-end gap-3">
             <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">Anulare</button>
@@ -396,17 +397,25 @@ export const UserManagement: React.FC = () => {
             className="w-full pl-9 pr-3 py-2 border rounded-lg"
           />
         </div>
-        <select value={role} onChange={(e) => setRole(e.target.value as UserRole | "all")} className="px-3 py-2 border rounded-lg">
-          <option value="all">Toate rolurile</option>
-          <option value="SuperAdmin">SuperAdmin</option>
-          <option value="Warehouse">Warehouse</option>
-          <option value="Farmacie">Farmacie</option>
-        </select>
-        <select value={status} onChange={(e) => setStatus(e.target.value as "all" | "active" | "inactive")} className="px-3 py-2 border rounded-lg">
-          <option value="all">Toate statusurile</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+        <CustomSelect
+          value={role}
+          onChange={(value) => setRole(value as UserRole | "all")}
+          options={[
+            { label: "Toate rolurile", value: "all" },
+            { label: "SuperAdmin", value: "SuperAdmin" },
+            { label: "Warehouse", value: "Warehouse" },
+            { label: "Farmacie", value: "Farmacie" },
+          ]}
+        />
+        <CustomSelect
+          value={status}
+          onChange={(value) => setStatus(value as "all" | "active" | "inactive")}
+          options={[
+            { label: "Toate statusurile", value: "all" },
+            { label: "Active", value: "active" },
+            { label: "Inactive", value: "inactive" },
+          ]}
+        />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">

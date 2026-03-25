@@ -1,0 +1,19 @@
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { WarehouseManagement } from "../../Components/dashboard/admin/WarehouseManagement";
+
+export const WarehouseManagementPage: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    const userType = localStorage.getItem("userType");
+    const userRole = localStorage.getItem("userRole");
+
+    if (!isLoggedIn || (userType !== "admin" && userRole !== "admin")) {
+      navigate("/login", { replace: true });
+    }
+  }, [navigate]);
+
+  return <WarehouseManagement />;
+};
