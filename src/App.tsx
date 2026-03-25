@@ -11,6 +11,7 @@ import { Login } from "./app/pages/Login";
 import { Register } from "./app/pages/Register";
 import { Dashboard } from "./app/pages/admin/Dashboard";
 import { UserManagementPage } from "./app/pages/admin/UserManagement";
+import { WarehouseManagementPage } from "./app/pages/admin/WarehouseManagement";
 import { About } from "./app/pages/About";
 import { Support } from "./app/pages/Support";
 import { Policies } from "./app/pages/Policies";
@@ -64,6 +65,7 @@ export default function App() {
                 <Routes>
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="users" element={<UserManagementPage />} />
+                  <Route path="warehouses" element={<WarehouseManagementPage />} />
                 </Routes>
               </AdminLayout>
             </AdminRouteGuard>

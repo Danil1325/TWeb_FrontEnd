@@ -18,6 +18,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       setActivePage("users");
       return;
     }
+    if (location.pathname === "/admin/warehouses") {
+      setActivePage("warehouses");
+      return;
+    }
     setActivePage("dashboard");
   }, [location.pathname]);
 
@@ -26,6 +30,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     const routeMap: Record<string, string> = {
       dashboard: "/admin/dashboard",
       users: "/admin/users",
+      warehouses: "/admin/warehouses",
     };
     navigate(routeMap[page] || "/admin/dashboard");
   };

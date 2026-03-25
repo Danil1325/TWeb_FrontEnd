@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
+  Warehouse,
   Store,
   ChevronLeft,
   ChevronRight,
@@ -42,6 +43,7 @@ export default function Sidebar({
   const menuItems = [
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", badge: null },
     { id: "users", icon: Users, label: "User Management", badge: String(usersCount) },
+    { id: "warehouses", icon: Warehouse, label: "Warehouse Management", badge: null },
   ];
 
   return (
