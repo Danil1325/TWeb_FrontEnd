@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { type SubmitEventHandler, useMemo, useState } from "react";
 import { Building2, Edit2, Plus, Trash2, Warehouse, X } from "lucide-react";
 import { AdminUser, users as fileUsers } from "../../../data/users";
 import { CustomSelect } from "../CustomSelect";
@@ -151,7 +151,8 @@ const WarehouseFormModal: React.FC<{
   assignableUsers: AdminUser[];
   initial?: WarehouseFormData;
   onClose: () => void;
-  onSave: (data: WarehouseFormData) => void;
+  // eslint-disable-next-line no-unused-vars
+  onSave: (...args: [WarehouseFormData]) => void;
 }> = ({ isOpen, title, assignableUsers, initial, onClose, onSave }) => {
   const [form, setForm] = useState<WarehouseFormData>(initial || defaultForm);
 
@@ -161,8 +162,8 @@ const WarehouseFormModal: React.FC<{
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault();
     onSave(form);
     onClose();
   };

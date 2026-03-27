@@ -38,7 +38,6 @@ export const Footer: React.FC = () => {
                         <h4 className="text-white font-semibold mb-4">Customer Service</h4>
                         <ul className="space-y-2 text-sm">
                             <li><Link to="/register" className="hover:text-white">Register Pharmacy</Link></li>
-                            <li><Link to="/account" className="hover:text-white">My Account</Link></li>
                             <li><Link to="/policies" className="hover:text-white">Return Policy</Link></li>
                             <li><Link to="/policies#privacy" className="hover:text-white">Privacy Policy</Link></li>
                         </ul>

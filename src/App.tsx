@@ -19,17 +19,12 @@ import { Support } from "./app/pages/Support";
 import { Policies } from "./app/pages/Policies";
 import Blog from "./app/pages/Blog";
 import { Checkout } from "./app/pages/Checkout";
-import { Account } from "./app/pages/Account";
 import { PharmacyDashboard } from "./app/pages/pharmacy/Dashboard";
 import { PharmacyLayout } from "./app/Components/dashboard/PharmacyLayout";
 import { WarehouseLayout } from "./app/Components/dashboard/WarehouseLayout";
 import { WarehouseDashboard } from "./app/pages/warehouse/Dashboard";
+import { WarehouseStock } from "./app/pages/warehouse/Stock";
 
-
-function AccountRouteGuard() {
-  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  return isLoggedIn ? <Account /> : <Navigate to="/login" replace />;
-}
 
 function AdminRouteGuard({ children }: { children: React.ReactNode }) {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
@@ -83,7 +78,7 @@ export default function App() {
               <WarehouseLayout>
                 <Routes>
                   <Route path="dashboard" element={<WarehouseDashboard />} />
-                  <Route path="stock" element={<WarehouseDashboard />} />
+                  <Route path="stock" element={<WarehouseStock />} />
                   <Route path="deliveries" element={<WarehouseDashboard />} />
                   <Route path="orders" element={<WarehouseDashboard />} />
                 </Routes>
@@ -113,7 +108,6 @@ export default function App() {
                 <Route path="/product/:id" element={<ProductDetails />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/account" element={<AccountRouteGuard />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="/policies" element={<Policies />} />

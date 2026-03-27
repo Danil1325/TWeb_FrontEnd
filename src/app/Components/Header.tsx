@@ -75,10 +75,10 @@ export default function Header() {
 
               {isLoggedIn ? (
                 <Link
-                  to="/account"
+                  to="/login"
                   className="text-indigo-500 bg-gray-100 rounded-2xl px-3 py-1 flex items-center gap-2"
                 >
-                  Account <AiOutlineUser />
+                  Profile <AiOutlineUser />
                 </Link>
               ) : (
                 <>

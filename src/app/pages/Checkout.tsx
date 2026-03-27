@@ -34,7 +34,7 @@ export const Checkout: React.FC = () => {
 
     toast.success('Order placed successfully! You will receive a confirmation email shortly.');
     clearCart();
-    navigate('/account');
+    navigate('/');
   };
 
   if (items.length === 0 && step === 'cart') {
