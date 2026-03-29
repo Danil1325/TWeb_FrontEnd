@@ -23,6 +23,7 @@ import { PharmacyDashboard } from "./app/pages/pharmacy/Dashboard";
 import { PharmacyLayout } from "./app/Components/dashboard/PharmacyLayout";
 import { WarehouseLayout } from "./app/Components/dashboard/WarehouseLayout";
 import { WarehouseDashboard } from "./app/pages/warehouse/Dashboard";
+import { WarehouseDeliveries } from "./app/pages/warehouse/Deliveries";
 import { WarehouseStock } from "./app/pages/warehouse/Stock";
 
 
@@ -79,7 +80,7 @@ export default function App() {
                 <Routes>
                   <Route path="dashboard" element={<WarehouseDashboard />} />
                   <Route path="stock" element={<WarehouseStock />} />
-                  <Route path="deliveries" element={<WarehouseDashboard />} />
+                  <Route path="deliveries" element={<WarehouseDeliveries />} />
                   <Route path="orders" element={<WarehouseDashboard />} />
                 </Routes>
               </WarehouseLayout>
