@@ -1,48 +1,67 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
-// Simple SVG chart helpers (no extra deps)
-const toNumber = (v: string) => Number(String(v).replace(/[^0-9.-]+/g, '')) || 0;
+// Small helpers
+const toNumber = (v: any) => Number(String(v || '').replace(/[^0-9.-]+/g, '')) || 0;
 
-function LineChart({ data, width = 600, height = 200 }: { data: { x: string; y: number }[]; width?: number; height?: number }) {
+function LineChart({ data, width = 760, height = 240 }: { data: { x: string; y: number }[]; width?: number; height?: number }) {
   if (!data.length) return <div className="text-sm text-gray-500">No data</div>;
   const values = data.map(d => d.y);
   const max = Math.max(...values) || 1;
   const min = Math.min(...values);
-  const padding = 20;
+  const padding = 36;
   const w = width - padding * 2;
   const h = height - padding * 2;
   const points = data.map((d, i) => {
     const x = padding + (i / Math.max(1, data.length - 1)) * w;
     const y = padding + (1 - (d.y - min) / (max - min || 1)) * h;
-    return `${x},${y}`;
-  }).join(' ');
+    return { x, y };
+  });
+
+  const path = points.map(p => `${p.x},${p.y}`).join(' ');
+
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-48">
-      <polyline fill="none" stroke="#4f46e5" strokeWidth={2} points={points} strokeLinecap="round" strokeLinejoin="round" />
-      {data.map((d, i) => {
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-52">
+      {/* grid */}
+      {[0,1,2,3,4].map(i => (
+        <line key={i} x1={padding} x2={width-padding} y1={padding + (h/4)*i} y2={padding + (h/4)*i} stroke="#eef2ff" />
+      ))}
+      {/* area */}
+      <polyline fill="none" stroke="#4f46e5" strokeWidth={2.5} points={path} strokeLinecap="round" strokeLinejoin="round" />
+      {points.map((p, i) => (
+        <g key={i}>
+          <circle cx={p.x} cy={p.y} r={4} fill="#6366f1" stroke="#fff" strokeWidth={1} />
+        </g>
+      ))}
+      {/* x labels */}
+      {data.map((d,i) => {
         const x = padding + (i / Math.max(1, data.length - 1)) * w;
-        const y = padding + (1 - (d.y - min) / (max - min || 1)) * h;
-        return <circle key={i} cx={x} cy={y} r={3} fill="#4f46e5" />;
+        return <text key={i} x={x} y={height-8} fontSize={10} textAnchor="middle" fill="#6b7280">{d.x}</text>;
       })}
     </svg>
   );
 }
 
-function BarChart({ data, height = 200 }: { data: { label: string; value: number }[]; height?: number }) {
+function BarChart({ data, height = 220 }: { data: { label: string; value: number }[]; height?: number }) {
   if (!data.length) return <div className="text-sm text-gray-500">No data</div>;
-  const max = Math.max(...data.map(d => d.value)) || 1;
+  const max = Math.max(...data.map(d => d.value));
+  if (max <= 0) return <div className="text-sm text-gray-500">No data available</div>;
+  const colors = ['#06b6d4','#3b82f6','#8b5cf6','#ef4444','#10b981','#f59e0b'];
+  const perBar = 70; // px per bar
+  const svgWidth = Math.max(600, data.length * perBar + 40);
   return (
-    <div className="w-full">
-      <svg viewBox={`0 0 600 ${height}`} className="w-full h-48">
+    <div className="w-full overflow-auto">
+      <svg viewBox={`0 0 ${svgWidth} ${height}`} className="w-full h-48">
         {data.map((d, i) => {
-          const barWidth = 500 / Math.max(1, data.length);
+          const barWidth = (svgWidth - 40) / Math.max(1, data.length);
           const x = 20 + i * barWidth;
-          const h = (d.value / max) * (height - 40);
-          const y = height - 20 - h;
+          const h = (d.value / max) * (height - 60);
+          const y = height - 30 - h;
+          const color = colors[i % colors.length];
           return (
             <g key={i}>
-              <rect x={x} y={y} width={barWidth * 0.7} height={h} fill="#06b6d4" rx={4} />
-              <text x={x + barWidth * 0.35} y={height - 4} fontSize={10} textAnchor="middle" fill="#111827">{d.label}</text>
+              <rect x={x + barWidth * 0.15} y={y} width={barWidth * 0.7} height={h} fill={color} rx={6} />
+              <text x={x + barWidth * 0.5} y={y - 6} fontSize={11} textAnchor="middle" fill="#111827">{d.value}</text>
+              <text x={x + barWidth * 0.5} y={height - 8} fontSize={11} textAnchor="middle" fill="#374151">{d.label}</text>
             </g>
           );
         })}
@@ -54,6 +73,7 @@ function BarChart({ data, height = 200 }: { data: { label: string; value: number
 function PieChart({ data, size = 160 }: { data: { label: string; value: number }[]; size?: number }) {
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
   let angle = -Math.PI / 2;
+  const palette = ["#3b82f6","#06b6d4","#10b981","#f59e0b","#ef4444","#8b5cf6"];
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {data.map((d, i) => {
@@ -65,7 +85,7 @@ function PieChart({ data, size = 160 }: { data: { label: string; value: number }
         const y2 = size / 2 + Math.sin(angle) * (size / 2 - 2);
         const large = slice > Math.PI ? 1 : 0;
         const dAttr = `M ${size / 2} ${size / 2} L ${x1} ${y1} A ${size / 2 - 2} ${size / 2 - 2} 0 ${large} 1 ${x2} ${y2} Z`;
-        const color = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#06b6d4"][i % 6];
+        const color = palette[i % palette.length];
         return <path key={i} d={dAttr} fill={color} stroke="#fff" />;
       })}
     </svg>
@@ -73,19 +93,39 @@ function PieChart({ data, size = 160 }: { data: { label: string; value: number }
 }
 
 export const Reports: React.FC = () => {
-  // load orders and stock from localStorage
-  const ordersRaw = useMemo(() => { try { return JSON.parse(localStorage.getItem('pharmacyOrders') || '[]'); } catch { return []; } }, []);
-  const stockRaw = useMemo(() => { try { return JSON.parse(localStorage.getItem('pharmacyStock') || '[]'); } catch { return []; } }, []);
+  // load orders and stock from localStorage, if empty use nice demo datasets
+  const ordersRaw = useMemo(() => { try { return JSON.parse(localStorage.getItem('pharmacyOrders') || 'null') || []; } catch { return []; } }, []);
+  const stockRaw = useMemo(() => { try { return JSON.parse(localStorage.getItem('pharmacyStock') || 'null') || []; } catch { return []; } }, []);
+
+  // nice default demo datasets
+  const sampleSales = [
+    { x: 'Jan', y: 1200 }, { x: 'Feb', y: 1500 }, { x: 'Mar', y: 1800 }, { x: 'Apr', y: 1700 }, { x: 'May', y: 2100 }, { x: 'Jun', y: 2400 }
+  ];
+  const sampleTop = [
+    { label: 'Paracetamol', value: 320 }, { label: 'Amoxicillin', value: 280 }, { label: 'Ibuprofen', value: 240 }, { label: 'Vitamin D3', value: 200 }, { label: 'Salbutamol', value: 160 }
+  ];
+  const sampleCategories = [
+    { label: 'Medicines', value: 4200 }, { label: 'Supplements', value: 800 }, { label: 'Medical Devices', value: 300 }, { label: 'Cosmetics', value: 150 }
+  ];
+  const sampleStockLevels = [
+    { label: 'Paracetamol', value: 1000 }, { label: 'Ibuprofen', value: 800 }, { label: 'Metformin', value: 350 }, { label: 'Amoxicillin', value: 500 }, { label: 'Atorvastatin', value: 450 }
+  ];
+  const sampleExpiry = [ { label: '30 days', value: 4 }, { label: '60 days', value: 6 }, { label: '90 days', value: 10 } ];
 
   // parse sales per order -> number
-  const sales = useMemo(() => ordersRaw.map((o: any) => ({ date: o.date || '', amount: toNumber(o.total || 0) })), [ordersRaw]);
+  const sales = useMemo(() => {
+    if (!ordersRaw || !ordersRaw.length) return sampleSales.map(s => ({ x: s.x, y: s.y }));
+    return ordersRaw.map((o: any) => ({ date: o.date || '', amount: toNumber(o.total || 0) }));
+  }, [ordersRaw]);
 
-  // 1. sales over time (day/week/month/season)
+  // period state (used only for label selection)
   const [period, setPeriod] = useState<'day'|'week'|'month'|'season'>('month');
 
   const salesByPeriod = useMemo(() => {
+    // when using demo sales, return them as-is
+    if (!ordersRaw || !ordersRaw.length) return sampleSales.map(s => ({ x: s.x, y: s.y }));
     const map = new Map<string, number>();
-    for (const s of sales) {
+    for (const s of sales as any) {
       const d = new Date(s.date);
       if (isNaN(d.getTime())) continue;
       let key = '';
@@ -107,22 +147,20 @@ export const Reports: React.FC = () => {
     }
     const arr = Array.from(map.entries()).sort((a,b)=>a[0].localeCompare(b[0])).map(([x,y])=>({x,y}));
     return arr;
-  }, [sales, period]);
+  }, [sales, period, ordersRaw]);
 
-  // 2. top sold products - try to read `pharmacySalesByProduct` from localStorage, otherwise synthesize from stock
   const topProducts = useMemo(() => {
+    if (!stockRaw || !stockRaw.length) return sampleTop;
     try {
       const byProd = JSON.parse(localStorage.getItem('pharmacySalesByProduct') || 'null');
       if (byProd) return Object.entries(byProd).map(([label,value])=>({label, value: Number(value) || 0})).sort((a,b)=>b.value-a.value).slice(0,10);
     } catch {}
-    // synthesize: use stock items quantity as inverse of sold (just demo)
     const items = Array.isArray(stockRaw) ? stockRaw : [];
     return (items.map((it: any)=>({ label: it.name || it.id, value: Math.max(0, 100 - (it.quantity||0)) }))).sort((a:any,b:any)=>b.value-a.value).slice(0,10);
   }, [stockRaw]);
 
-  // 3. sales by categories - try categories from stock (heuristic)
   const salesByCategory = useMemo(() => {
-    // simple mapping by keywords
+    if (!stockRaw || !stockRaw.length) return sampleCategories;
     const categories: Record<string, number> = {};
     const mapNameToCategory = (name: string) => {
       const n = name.toLowerCase();
@@ -139,14 +177,14 @@ export const Reports: React.FC = () => {
     return Object.entries(categories).map(([label,value])=>({label,value}));
   }, [stockRaw]);
 
-  // 4. stock levels
   const stockLevels = useMemo(() => {
+    if (!stockRaw || !stockRaw.length) return sampleStockLevels;
     const items = Array.isArray(stockRaw) ? stockRaw : [];
     return items.map((it:any)=>({ label: it.name || it.id, value: it.quantity || 0 }));
   }, [stockRaw]);
 
-  // 5. near expiry counts
   const expiryCounts = useMemo(() => {
+    if (!stockRaw || !stockRaw.length) return sampleExpiry;
     const now = new Date();
     const buckets = { '30':0, '60':0, '90':0 } as Record<string, number>;
     for (const it of stockRaw) {
