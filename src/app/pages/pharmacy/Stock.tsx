@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Package, Search, PlusCircle, FileDown } from 'lucide-react';
+import { seedPharmacyStock } from '../../data/seeder';
 import { useNavigate } from 'react-router-dom';
 
 type StockItem = {
@@ -22,18 +23,22 @@ export const Stock: React.FC = () => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       try {
-        setItems(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length >= 15) {
+          setItems(parsed);
+          return;
+        }
       } catch (e) {
         console.error('Invalid stock in localStorage', e);
       }
-    } else {
-      const seed: StockItem[] = [
-        { id: 'STK-001', name: 'Paracetamol 500mg', sku: 'PARA-500', quantity: 120, location: 'Shelf A1', expiry: '2026-12-31' },
-        { id: 'STK-002', name: 'Amoxicillin 500mg', sku: 'AMOX-500', quantity: 32, location: 'Shelf B2', expiry: '2026-06-30' },
-        { id: 'STK-003', name: 'Insulin Pens', sku: 'INS-PEN', quantity: 8, location: 'Fridge', expiry: null },
-      ];
-      setItems(seed);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+    }
+    // seed automatically with stock data (overwrite) so UI shows products by default
+    try {
+      seedPharmacyStock(true);
+      const seeded = localStorage.getItem(STORAGE_KEY);
+      if (seeded) setItems(JSON.parse(seeded));
+    } catch (e) {
+      console.error('Failed to seed pharmacy stock', e);
     }
   }, []);
 

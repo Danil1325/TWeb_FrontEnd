@@ -230,4 +230,52 @@ export const products: Product[] = [
     prescriptionRequired: true,
     featured: true
   }
+  ,
+  {
+    id: '13',
+    name: 'Cough Relief Syrup 100ml',
+    category: 'Respiratory',
+    description: 'Soothing syrup for cough and throat irritation',
+    fullDescription: 'Cough Relief Syrup contains expectorant and demulcent agents to help loosen mucus and soothe the throat. Suitable for dry and productive coughs in adults and children over 6 years.',
+    price: 9.5,
+    image: 'https://images.unsplash.com/photo-1581574206998-2a5bd8f0b3d3?w=400',
+    inStock: true,
+    stockQuantity: 260,
+    manufacturer: 'RespiraCare',
+    activeIngredient: 'Dextromethorphan / Guaifenesin',
+    dosage: '10ml = 5mg Dextromethorphan',
+    packaging: '100ml bottle',
+    prescriptionRequired: false,
+    featured: false
+  },
+  {
+    id: '14',
+    name: 'Multivitamin Gummies',
+    category: 'Vitamins & Supplements',
+    description: 'Daily multivitamin for adults',
+    fullDescription: 'Tasty multivitamin gummies with essential vitamins and minerals to support daily wellbeing, energy and immune function.',
+    price: 19.99,
+    image: 'https://images.unsplash.com/photo-1598970434795-0c54fe7c0642?w=400',
+    inStock: true,
+    stockQuantity: 480,
+    manufacturer: 'VitaPlus',
+    packaging: '90 gummies/bottle',
+    prescriptionRequired: false,
+    featured: true
+  },
+  {
+    id: '15',
+    name: 'Glucometer Test Strips (50)',
+    category: 'Medical Devices',
+    description: 'Blood glucose test strips for glucometers',
+    fullDescription: 'Compatible test strips for a range of glucometers; accurate readings when used with approved meters. Pack of 50 strips.',
+    price: 29.99,
+    image: 'https://images.unsplash.com/photo-1582719478149-18f3f9f6f7d3?w=400',
+    inStock: true,
+    stockQuantity: 320,
+    manufacturer: 'GlucoTech',
+    packaging: '50 strips/box',
+    prescriptionRequired: false,
+    featured: false
+  }
 ];

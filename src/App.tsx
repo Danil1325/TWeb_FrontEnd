@@ -22,11 +22,13 @@ import { Checkout } from "./app/pages/Checkout";
 import { PharmacyDashboard } from "./app/pages/pharmacy/Dashboard";
 import { Orders } from "./app/pages/pharmacy/Orders";
 import { OrderDetails } from "./app/pages/pharmacy/OrderDetails";
+import { ReturnDetails } from "./app/pages/pharmacy/ReturnDetails";
 import { Stock } from "./app/pages/pharmacy/Stock";
 import { Shipments } from "./app/pages/pharmacy/Shipments";
 import { Returns } from "./app/pages/pharmacy/Returns";
 import { StockDetails } from "./app/pages/pharmacy/StockDetails";
 import { Reports } from "./app/pages/pharmacy/Reports";
+import { ShipmentDetails } from "./app/pages/pharmacy/ShipmentDetails";
 import { PharmacyLayout } from "./app/Components/dashboard/PharmacyLayout";
 import { WarehouseLayout } from "./app/Components/dashboard/WarehouseLayout";
 import { WarehouseDashboard } from "./app/pages/warehouse/Dashboard";
@@ -109,6 +111,8 @@ export default function App() {
                 <Route path="stock" element={<Stock />} />
                 <Route path="stock/:id" element={<StockDetails />} />
                 <Route path="order/:id" element={<OrderDetails />} />
+                <Route path="shipments/:id" element={<ShipmentDetails />} />
+                <Route path="returns/:id" element={<ReturnDetails />} />
               </Routes>
             </PharmacyLayout>
           }
