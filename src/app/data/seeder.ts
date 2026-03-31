@@ -34,6 +34,51 @@ export function seedPharmacyOrders(overwrite = false) {
   }
 }
 
+// Stock seeder
+import { products } from './products';
+
+type StockItem = {
+  id: string;
+  name: string;
+  sku?: string;
+  quantity: number;
+  location?: string;
+  expiry?: string | null;
+};
+
+const STOCK_KEY = 'pharmacyStock';
+
+export function seedPharmacyStock(overwrite = false) {
+  try {
+    const existing = localStorage.getItem(STOCK_KEY);
+    if (existing && !overwrite) return false;
+    const mapped: StockItem[] = products.map((p, i) => {
+      // generate some expiry dates for medicines, leave devices and kits without expiry
+      let expiry: string | null = null;
+      const isMedicine = (p.category && p.category !== 'Medical Devices' && p.category !== 'First Aid');
+      if (isMedicine) {
+        const days = [30, 60, 120, 365][i % 4];
+        const d = new Date();
+        d.setDate(d.getDate() + days - (i % 5));
+        expiry = d.toISOString().slice(0, 10);
+      }
+      return {
+        id: `STK-${(i + 1).toString().padStart(3, '0')}`,
+        name: p.name,
+        sku: `${p.name.split(' ')[0].toUpperCase().slice(0,6)}-${p.id}`,
+        quantity: p.stockQuantity ?? Math.floor(Math.random() * 500),
+        location: `Shelf ${String.fromCharCode(65 + (i % 6))}${Math.floor(i / 6) + 1}`,
+        expiry,
+      } as StockItem;
+    });
+    localStorage.setItem(STOCK_KEY, JSON.stringify(mapped));
+    return true;
+  } catch (e) {
+    console.error('Failed to seed pharmacy stock', e);
+    return false;
+  }
+}
+
 export default {
   samplePharmacyOrders,
   seedPharmacyOrders,
