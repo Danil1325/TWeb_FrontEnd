@@ -22,6 +22,7 @@ import { Checkout } from "./app/pages/Checkout";
 import { PharmacyDashboard } from "./app/pages/pharmacy/Dashboard";
 import { Orders } from "./app/pages/pharmacy/Orders";
 import { OrderDetails } from "./app/pages/pharmacy/OrderDetails";
+import { ReturnDetails } from "./app/pages/pharmacy/ReturnDetails";
 import { Stock } from "./app/pages/pharmacy/Stock";
 import { Shipments } from "./app/pages/pharmacy/Shipments";
 import { Returns } from "./app/pages/pharmacy/Returns";
@@ -111,6 +112,7 @@ export default function App() {
                 <Route path="stock/:id" element={<StockDetails />} />
                 <Route path="order/:id" element={<OrderDetails />} />
                 <Route path="shipments/:id" element={<ShipmentDetails />} />
+                <Route path="returns/:id" element={<ReturnDetails />} />
               </Routes>
             </PharmacyLayout>
           }

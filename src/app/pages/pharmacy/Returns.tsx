@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { RotateCcw, Search, FileDown } from 'lucide-react';
+import { RotateCcw, Search, FileDown, CheckCircle, Trash2 } from 'lucide-react';
+import { seedPharmacyReturns, samplePharmacyReturns } from '../../data/seeder';
 import { useNavigate } from 'react-router-dom';
 
 type ReturnItem = {
@@ -21,15 +22,20 @@ export const Returns: React.FC = () => {
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      try { setReturnsList(JSON.parse(raw)); } catch (e) { console.error(e); }
-    } else {
-      const seed: ReturnItem[] = [
-        { id: 'RT-001', orderId: 'PH-ORD-001', reason: 'Damaged', status: 'Pending', date: '2026-03-16', items: 3 },
-        { id: 'RT-002', orderId: 'PH-ORD-002', reason: 'Wrong item', status: 'Processed', date: '2026-03-14', items: 1 },
-        { id: 'RT-003', orderId: 'PH-ORD-010', reason: 'Expired', status: 'Pending', date: '2026-03-12', items: 5 },
-      ];
-      setReturnsList(seed); localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length >= 2) {
+          setReturnsList(parsed);
+          return;
+        }
+      } catch (e) { console.error(e); }
     }
+    try {
+      seedPharmacyReturns(true);
+      const seeded = localStorage.getItem(STORAGE_KEY);
+      if (seeded) setReturnsList(JSON.parse(seeded));
+      else setReturnsList(samplePharmacyReturns.slice(0,2));
+    } catch (e) { console.error('Failed to seed returns', e); }
   }, []);
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(returnsList)); }, [returnsList]);
@@ -45,8 +51,14 @@ export const Returns: React.FC = () => {
     const a = document.createElement('a'); a.href = url; a.download = `pharmacy-returns-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
   };
 
-  const markProcessed = (id: string) => setReturnsList(s => s.map(x => x.id === id ? { ...x, status: 'Processed' } : x));
-  const removeReturn = (id: string) => setReturnsList(s => s.filter(x => x.id !== id));
+  const markProcessed = (id: string) => {
+    if (!confirm('Mark this return as processed?')) return;
+    setReturnsList(s => s.map(x => x.id === id ? { ...x, status: 'Processed' } : x));
+  };
+  const removeReturn = (id: string) => {
+    if (!confirm('Delete this return? This cannot be undone.')) return;
+    setReturnsList(s => s.filter(x => x.id !== id));
+  };
 
   return (
     <div className="space-y-6">
@@ -94,8 +106,20 @@ export const Returns: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center gap-3 justify-end">
                       <button onClick={() => navigate(`/pharmacy/returns/${r.id}`)} className="text-indigo-600 hover:underline">View</button>
-                      {r.status !== 'Processed' && <button onClick={() => markProcessed(r.id)} className="text-green-600">Mark Processed</button>}
-                      <button onClick={() => removeReturn(r.id)} className="text-red-600">Delete</button>
+                      {r.status !== 'Processed' ? (
+                        <button onClick={() => markProcessed(r.id)} className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-green-600 text-white text-sm hover:bg-green-700">
+                          <CheckCircle className="w-4 h-4" />
+                          Mark Processed
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-green-100 text-green-800 text-xs">
+                          <CheckCircle className="w-3 h-3" /> Processed
+                        </span>
+                      )}
+                      <button onClick={() => removeReturn(r.id)} className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-red-50 text-red-600 border border-red-100 hover:bg-red-100">
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>

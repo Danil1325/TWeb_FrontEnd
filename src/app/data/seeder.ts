@@ -114,6 +114,37 @@ export function seedPharmacyShipments(overwrite = false) {
   }
 }
 
+// Returns seeder
+type ReturnItem = {
+  id: string;
+  orderId: string;
+  reason: string;
+  status: string;
+  date: string;
+  items: number;
+};
+
+const RETURNS_KEY = 'pharmacyReturns';
+
+export const samplePharmacyReturns: ReturnItem[] = [
+  { id: 'RT-001', orderId: 'PH-ORD-100', reason: 'Damaged', status: 'Pending', date: '2026-03-16', items: 3 },
+  { id: 'RT-002', orderId: 'PH-ORD-101', reason: 'Wrong item', status: 'Processed', date: '2026-03-14', items: 1 },
+  { id: 'RT-003', orderId: 'PH-ORD-102', reason: 'Expired', status: 'Pending', date: '2026-03-12', items: 5 },
+];
+
+export function seedPharmacyReturns(overwrite = false) {
+  try {
+    const existing = localStorage.getItem(RETURNS_KEY);
+    if (existing && !overwrite) return false;
+    const take = samplePharmacyReturns.slice(0, Math.min(samplePharmacyReturns.length, 3));
+    localStorage.setItem(RETURNS_KEY, JSON.stringify(take));
+    return true;
+  } catch (e) {
+    console.error('Failed to seed pharmacy returns', e);
+    return false;
+  }
+}
+
 export default {
   samplePharmacyOrders,
   seedPharmacyOrders,
