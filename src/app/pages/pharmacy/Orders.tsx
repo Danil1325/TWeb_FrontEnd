@@ -1,17 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Package, Clock, CheckCircle, AlertCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-type PharmacyOrder = {
-	id: string;
-	supplier: string;
-	status: string;
-	items: number;
-	total: string;
-	date: string;
-	notes?: string;
-};
-
+import { PharmacyOrder, samplePharmacyOrders, seedPharmacyOrders } from "../../data/seeder";
 const STORAGE_KEY = "pharmacyOrders";
 
 export const Orders: React.FC = () => {
@@ -20,23 +10,28 @@ export const Orders: React.FC = () => {
 	const navigate = useNavigate();
 
 	useEffect(() => {
-		const raw = localStorage.getItem(STORAGE_KEY);
-		if (raw) {
-			try {
-				setOrders(JSON.parse(raw));
-			} catch (e) {
-				console.error("Invalid orders in localStorage", e);
+		const load = async () => {
+			const raw = localStorage.getItem(STORAGE_KEY);
+			if (raw) {
+				try {
+					const parsed = JSON.parse(raw);
+					if (Array.isArray(parsed) && parsed.length >= samplePharmacyOrders.length) {
+						setOrders(parsed);
+						return;
+					}
+				} catch (e) {
+					console.error("Invalid orders in localStorage", e);
+				}
 			}
-		} else {
-			// seed demo data
-			const seed: PharmacyOrder[] = [
-				{ id: "PH-ORD-001", supplier: "PharmaCorp Ltd", status: "Pending", items: 12, total: "$2,340.00", date: "2026-03-15", notes: "Urgent" },
-				{ id: "PH-ORD-002", supplier: "MedSupply Inc", status: "Confirmed", items: 8, total: "$1,650.00", date: "2026-03-14" },
-				{ id: "PH-ORD-003", supplier: "Global Pharma", status: "Delivered", items: 25, total: "$4,200.00", date: "2026-03-13" },
-			];
-			setOrders(seed);
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-		}
+			// if no data or not enough entries -> seed via shared seeder (overwrite)
+			try {
+				seedPharmacyOrders(true);
+				setOrders(samplePharmacyOrders);
+			} catch (e) {
+				console.error('Failed to seed orders from shared seeder', e);
+			}
+		};
+		load();
 	}, []);
 
 	useEffect(() => {

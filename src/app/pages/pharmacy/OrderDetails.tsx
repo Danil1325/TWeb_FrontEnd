@@ -83,7 +83,20 @@ export const OrderDetails: React.FC = () => {
               <CheckCircle className="w-4 h-4" />
               Mark Delivered
             </button>
-            <button onClick={() => { /* optional delete action */ }} className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-red-50 text-red-600 border border-red-100 hover:bg-red-100">
+            <button onClick={() => {
+              if (!confirm('Delete this order? This action cannot be undone.')) return;
+              try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                  const arr: PharmacyOrder[] = JSON.parse(raw);
+                  const updated = arr.filter((o) => o.id !== id);
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                }
+              } catch (e) {
+                console.error('Failed to delete order', e);
+              }
+              navigate('/pharmacy/orders');
+            }} className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-red-50 text-red-600 border border-red-100 hover:bg-red-100">
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
