@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Truck, Search, FileDown } from 'lucide-react';
+import { Truck, Search, FileDown, CheckCircle } from 'lucide-react';
+import { seedPharmacyShipments, samplePharmacyShipments } from '../../data/seeder';
 import { useNavigate } from 'react-router-dom';
 
 type Shipment = {
@@ -21,15 +22,20 @@ export const Shipments: React.FC = () => {
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      try { setShipments(JSON.parse(raw)); } catch (e) { console.error(e); }
-    } else {
-      const seed: Shipment[] = [
-        { id: 'SH-1001', supplier: 'PharmaCorp Ltd', status: 'In transit', eta: '2026-03-31 15:40', items: 94, received: false },
-        { id: 'SH-1002', supplier: 'MedSupply Inc', status: 'Picked', eta: '2026-03-31 18:20', items: 40, received: false },
-        { id: 'SH-1003', supplier: 'Global Pharma', status: 'Quality check', eta: '2026-04-01', items: 120, received: false },
-      ];
-      setShipments(seed); localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length >= 5) {
+          setShipments(parsed);
+          return;
+        }
+      } catch (e) { console.error(e); }
     }
+    try {
+      seedPharmacyShipments(true);
+      const seeded = localStorage.getItem(STORAGE_KEY);
+      if (seeded) setShipments(JSON.parse(seeded));
+      else setShipments(samplePharmacyShipments.slice(0,5));
+    } catch (e) { console.error('Failed to seed shipments', e); }
   }, []);
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(shipments)); }, [shipments]);
@@ -45,7 +51,10 @@ export const Shipments: React.FC = () => {
     const a = document.createElement('a'); a.href = url; a.download = `pharmacy-shipments-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
   };
 
-  const markReceived = (id: string) => setShipments(s => s.map(x => x.id === id ? { ...x, received: true, status: 'Received' } : x));
+  const markReceived = (id: string) => {
+    if (!confirm('Mark this shipment as received?')) return;
+    setShipments(s => s.map(x => x.id === id ? { ...x, received: true, status: 'Received' } : x));
+  };
 
   return (
     <div className="space-y-6">
@@ -93,7 +102,16 @@ export const Shipments: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center gap-3 justify-end">
                       <button onClick={() => navigate(`/pharmacy/shipments/${s.id}`)} className="text-indigo-600 hover:underline">View</button>
-                      {!s.received && <button onClick={() => markReceived(s.id)} className="text-green-600">Mark Received</button>}
+                      {!s.received ? (
+                        <button onClick={() => markReceived(s.id)} className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-green-600 text-white text-sm hover:bg-green-700">
+                          <CheckCircle className="w-4 h-4" />
+                          Receive
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-green-100 text-green-800 text-xs">
+                          <CheckCircle className="w-3 h-3" /> Received
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>

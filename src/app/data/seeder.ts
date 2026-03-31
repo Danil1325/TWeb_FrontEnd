@@ -79,6 +79,41 @@ export function seedPharmacyStock(overwrite = false) {
   }
 }
 
+// Shipments seeder
+type Shipment = {
+  id: string;
+  supplier: string;
+  status: string;
+  eta?: string;
+  items: number;
+  received?: boolean;
+};
+
+const SHIP_KEY = 'pharmacyShipments';
+
+export const samplePharmacyShipments: Shipment[] = [
+  { id: 'SH-1001', supplier: 'PharmaCorp Ltd', status: 'In transit', eta: '2026-03-31 15:40', items: 94, received: false },
+  { id: 'SH-1002', supplier: 'MedSupply Inc', status: 'Picked', eta: '2026-03-31 18:20', items: 40, received: false },
+  { id: 'SH-1003', supplier: 'Global Pharma', status: 'Quality check', eta: '2026-04-01', items: 120, received: false },
+  { id: 'SH-1004', supplier: 'Wellness Supplies', status: 'In transit', eta: '2026-04-02 09:00', items: 60, received: false },
+  { id: 'SH-1005', supplier: 'BioMed Traders', status: 'Picked', eta: '2026-04-02 12:30', items: 30, received: false },
+  { id: 'SH-1006', supplier: 'Apex Pharmaceuticals', status: 'In transit', eta: '2026-04-03 16:00', items: 75, received: false },
+];
+
+export function seedPharmacyShipments(overwrite = false) {
+  try {
+    const existing = localStorage.getItem(SHIP_KEY);
+    if (existing && !overwrite) return false;
+    // pick 5-8 shipments from sample (use all for simplicity)
+    const take = samplePharmacyShipments.slice(0, Math.min(samplePharmacyShipments.length, 8));
+    localStorage.setItem(SHIP_KEY, JSON.stringify(take));
+    return true;
+  } catch (e) {
+    console.error('Failed to seed pharmacy shipments', e);
+    return false;
+  }
+}
+
 export default {
   samplePharmacyOrders,
   seedPharmacyOrders,

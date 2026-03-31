@@ -27,6 +27,7 @@ import { Shipments } from "./app/pages/pharmacy/Shipments";
 import { Returns } from "./app/pages/pharmacy/Returns";
 import { StockDetails } from "./app/pages/pharmacy/StockDetails";
 import { Reports } from "./app/pages/pharmacy/Reports";
+import { ShipmentDetails } from "./app/pages/pharmacy/ShipmentDetails";
 import { PharmacyLayout } from "./app/Components/dashboard/PharmacyLayout";
 import { WarehouseLayout } from "./app/Components/dashboard/WarehouseLayout";
 import { WarehouseDashboard } from "./app/pages/warehouse/Dashboard";
@@ -109,6 +110,7 @@ export default function App() {
                 <Route path="stock" element={<Stock />} />
                 <Route path="stock/:id" element={<StockDetails />} />
                 <Route path="order/:id" element={<OrderDetails />} />
+                <Route path="shipments/:id" element={<ShipmentDetails />} />
               </Routes>
             </PharmacyLayout>
           }
