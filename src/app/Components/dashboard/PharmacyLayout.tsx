@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { LogOut, User } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import PharmacySidebar from "./PharmacySidebar";
 import { PharmacyProfile } from "../../pages/pharmacy/Profile";
 
@@ -12,6 +12,7 @@ export const PharmacyLayout: React.FC<PharmacyLayoutProps> = ({ children }) => {
   const [activePage, setActivePage] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const userEmail = localStorage.getItem("userEmail") || "Pharmacy User";
 
@@ -22,11 +23,26 @@ export const PharmacyLayout: React.FC<PharmacyLayoutProps> = ({ children }) => {
     navigate("/login", { replace: true });
   };
 
+  // Sync active page with URL
+  useEffect(() => {
+    const parts = location.pathname.split('/').filter(Boolean);
+    // expecting ['/pharmacy', 'orders'] -> parts[0] = 'pharmacy', parts[1] = 'orders'
+    const page = parts[1] || 'dashboard';
+    setActivePage(page);
+  }, [location.pathname]);
+
+  const handlePageChange = (page: string) => {
+    setActivePage(page);
+    // navigate to route
+    if (page === 'dashboard') navigate('/pharmacy/dashboard');
+    else navigate(`/pharmacy/${page}`);
+  };
+
   return (
     <div className="h-screen flex overflow-hidden bg-gray-100">
       <PharmacySidebar
         activePage={activePage}
-        setActivePage={setActivePage}
+        setActivePage={handlePageChange}
         collapsed={collapsed}
         setCollapsed={setCollapsed}
       />

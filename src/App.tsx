@@ -20,6 +20,8 @@ import { Policies } from "./app/pages/Policies";
 import Blog from "./app/pages/Blog";
 import { Checkout } from "./app/pages/Checkout";
 import { PharmacyDashboard } from "./app/pages/pharmacy/Dashboard";
+import { Orders } from "./app/pages/pharmacy/Orders";
+import { OrderDetails } from "./app/pages/pharmacy/OrderDetails";
 import { PharmacyLayout } from "./app/Components/dashboard/PharmacyLayout";
 import { WarehouseLayout } from "./app/Components/dashboard/WarehouseLayout";
 import { WarehouseDashboard } from "./app/pages/warehouse/Dashboard";
@@ -95,6 +97,8 @@ export default function App() {
             <PharmacyLayout>
               <Routes>
                 <Route path="dashboard" element={<PharmacyDashboard />} />
+                <Route path="orders" element={<Orders />} />
+                <Route path="order/:id" element={<OrderDetails />} />
               </Routes>
             </PharmacyLayout>
           }
