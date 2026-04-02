@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ArrowLeftRight,
   ArrowUpCircle,
@@ -97,20 +97,18 @@ const toDisplayDate = (value: string): string => {
 
 export const PharmacyManagement: React.FC = () => {
   const [search, setSearch] = useState("");
-  const [selectedPharmacy, setSelectedPharmacy] = useState<string>("all");
+  const [selectedPharmacy, setSelectedPharmacy] = useState<string>(() => {
+    const firstPharmacy = parseUsers().find((user) => user.role === "Farmacie");
+    return firstPharmacy?.id ?? "all";
+  });
   const [selectedMovementType, setSelectedMovementType] = useState<string>("all");
+  const [baseTimestamp] = useState(() => Date.now());
 
   const pharmacies = useMemo(
     () => parseUsers().filter((user) => user.role === "Farmacie"),
     []
   );
   const trackedProducts = useMemo(() => products.slice(0, 12), []);
-
-  useEffect(() => {
-    if (selectedPharmacy === "all" && pharmacies.length > 0) {
-      setSelectedPharmacy(pharmacies[0].id);
-    }
-  }, [selectedPharmacy, pharmacies]);
 
   const selectedPharmacyName = useMemo(() => {
     if (selectedPharmacy === "all") return "Toate farmaciile";
@@ -154,7 +152,7 @@ export const PharmacyManagement: React.FC = () => {
 
       return {
         id: `ph-mv-${index + 1}`,
-        timestamp: new Date(Date.now() - index * 50 * 60 * 1000).toISOString(),
+        timestamp: new Date(baseTimestamp - index * 50 * 60 * 1000).toISOString(),
         pharmacyId: row.pharmacyId,
         pharmacyName: row.pharmacyName,
         productName: row.productName,
@@ -176,7 +174,7 @@ export const PharmacyManagement: React.FC = () => {
         operator: type === "ajustare" ? "Super Admin" : "Farmacist",
       };
     });
-  }, [stockRows]);
+  }, [baseTimestamp, stockRows]);
 
   const filteredStockRows = useMemo(() => {
     const term = search.trim().toLowerCase();

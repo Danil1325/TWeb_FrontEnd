@@ -34,6 +34,7 @@ import { WarehouseLayout } from "./app/Components/dashboard/WarehouseLayout";
 import { WarehouseDashboard } from "./app/pages/warehouse/Dashboard";
 import { WarehouseDeliveries } from "./app/pages/warehouse/Deliveries";
 import { WarehouseOrders } from "./app/pages/warehouse/Orders";
+import { WarehouseProducts } from "./app/pages/warehouse/Products";
 import { WarehouseStock } from "./app/pages/warehouse/Stock";
 
 
@@ -89,6 +90,7 @@ export default function App() {
               <WarehouseLayout>
                 <Routes>
                   <Route path="dashboard" element={<WarehouseDashboard />} />
+                  <Route path="products" element={<WarehouseProducts />} />
                   <Route path="stock" element={<WarehouseStock />} />
                   <Route path="deliveries" element={<WarehouseDeliveries />} />
                   <Route path="orders" element={<WarehouseOrders />} />

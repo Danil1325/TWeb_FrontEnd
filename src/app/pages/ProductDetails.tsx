@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, ArrowLeft, Package, AlertCircle, CheckCircle, Truck } from 'lucide-react';
-import { products } from '../data/products';
-import { useCart } from '../context/CartContext';
+import { getStoredProducts } from '../data/productStore';
+import { useCart } from '../context/useCart';
 import { toast } from 'sonner';
 
 export const ProductDetails: React.FC = () => {
@@ -10,6 +10,7 @@ export const ProductDetails: React.FC = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const products = getStoredProducts();
 
   const product = products.find(p => p.id === id);
 

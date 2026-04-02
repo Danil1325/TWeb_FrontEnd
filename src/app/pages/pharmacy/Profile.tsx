@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Building2,
   CheckCircle,
@@ -77,14 +77,8 @@ const ProfileField: React.FC<FieldProps> = ({ label, value, name, editing, type 
 
 export const PharmacyProfile: React.FC = () => {
   const [profile, setProfile] = useState<PharmacyProfileData>(loadProfile);
-  const [draft, setDraft] = useState<PharmacyProfileData>(profile);
+  const [draft, setDraft] = useState<PharmacyProfileData>(loadProfile);
   const [editing, setEditing] = useState(false);
-
-  useEffect(() => {
-    const p = loadProfile();
-    setProfile(p);
-    setDraft(p);
-  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, CreditCard, Building2, Truck, Package } from 'lucide-react';
 import { toast } from 'sonner';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/useCart';
 
 export const Checkout: React.FC = () => {
   const navigate = useNavigate();

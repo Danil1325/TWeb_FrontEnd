@@ -68,8 +68,7 @@ export const Register: React.FC = () => {
 
             toast.success('Cererea a fost trimisa. Vei putea intra dupa aprobarea SuperAdmin.');
             navigate('/login');
-            // eslint-disable-next-line no-unused-vars,@typescript-eslint/no-unused-vars
-        } catch (error) {
+        } catch {
             toast.error('Registration failed. Please try again.');
         } finally {
             setLoading(false);

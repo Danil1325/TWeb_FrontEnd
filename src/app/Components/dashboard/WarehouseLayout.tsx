@@ -11,10 +11,18 @@ export const WarehouseLayout: React.FC<WarehouseLayoutProps> = ({ children }) =>
   const [activePage, setActivePage] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
+  const pageTitles: Record<string, string> = {
+    dashboard: "Warehouse Dashboard",
+    products: "Warehouse Products",
+    stock: "Warehouse Stock",
+    deliveries: "Warehouse Deliveries",
+    orders: "Warehouse Orders",
+  };
 
   React.useEffect(() => {
     const routeMap: Record<string, string> = {
       dashboard: "/warehouse/dashboard",
+      products: "/warehouse/products",
       stock: "/warehouse/stock",
       deliveries: "/warehouse/deliveries",
       orders: "/warehouse/orders",
@@ -45,7 +53,7 @@ export const WarehouseLayout: React.FC<WarehouseLayoutProps> = ({ children }) =>
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900">Warehouse Dashboard</h1>
+                <h1 className="text-xl font-semibold text-gray-900">{pageTitles[activePage] || "Warehouse Dashboard"}</h1>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">

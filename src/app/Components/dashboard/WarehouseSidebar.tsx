@@ -6,6 +6,7 @@ import {
   Boxes,
   Truck,
   ClipboardList,
+  PackagePlus,
   ChevronLeft,
   ChevronRight,
   Warehouse,
@@ -20,6 +21,7 @@ interface WarehouseSidebarProps {
 
 const menuItems = [
   { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", badge: null },
+  { id: "products", icon: PackagePlus, label: "Products", badge: null },
   { id: "stock", icon: Boxes, label: "Stock", badge: "17" },
   { id: "deliveries", icon: Truck, label: "Deliveries", badge: "3" },
   { id: "orders", icon: ClipboardList, label: "Outgoing Orders", badge: "29" },
@@ -36,6 +38,7 @@ export default function WarehouseSidebar({
   React.useEffect(() => {
     const pathMap: Record<string, string> = {
       "/warehouse/dashboard": "dashboard",
+      "/warehouse/products": "products",
       "/warehouse/stock": "stock",
       "/warehouse/deliveries": "deliveries",
       "/warehouse/orders": "orders",

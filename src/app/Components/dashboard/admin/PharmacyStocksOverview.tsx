@@ -150,6 +150,7 @@ const prettyDateTime = (isoDate: string): string => {
 
 export const PharmacyStocksOverview: React.FC = () => {
   const [activeSection, setActiveSection] = useState<SectionId>("stock");
+  const [snapshotTimestamp] = useState(() => Date.now());
 
   const warehouses = useMemo(() => parseWarehouses(), []);
   const pharmacies = useMemo(
@@ -195,7 +196,7 @@ export const PharmacyStocksOverview: React.FC = () => {
 
       return {
         id: `mv-${index + 1}`,
-        timestamp: new Date(Date.now() - index * 90 * 60 * 1000).toISOString(),
+        timestamp: new Date(snapshotTimestamp - index * 90 * 60 * 1000).toISOString(),
         warehouseName: warehouse?.name ?? "Depozit necunoscut",
         pharmacyName: pharmacy?.name ?? "Farmacie necunoscuta",
         productName: product?.name ?? "Produs necunoscut",
@@ -204,7 +205,7 @@ export const PharmacyStocksOverview: React.FC = () => {
         reference: `REF-${(1000 + index).toString()}`,
       };
     });
-  }, [stockRecords, warehouses, pharmacies, trackedProducts]);
+  }, [pharmacies, snapshotTimestamp, stockRecords, trackedProducts, warehouses]);
 
   const manualAdjustments = useMemo<ManualAdjustment[]>(() => {
     return stockRecords.slice(0, 12).map((record, index) => {
@@ -216,7 +217,7 @@ export const PharmacyStocksOverview: React.FC = () => {
 
       return {
         id: `adj-${index + 1}`,
-        timestamp: new Date(Date.now() - index * 7 * 60 * 60 * 1000).toISOString(),
+        timestamp: new Date(snapshotTimestamp - index * 7 * 60 * 60 * 1000).toISOString(),
         warehouseName: warehouse?.name ?? "Depozit necunoscut",
         pharmacyName: pharmacy?.name ?? "Farmacie necunoscuta",
         productName: product?.name ?? "Produs necunoscut",
@@ -226,7 +227,7 @@ export const PharmacyStocksOverview: React.FC = () => {
         operator: "Super Admin",
       };
     });
-  }, [stockRecords, warehouses, pharmacies, trackedProducts]);
+  }, [pharmacies, snapshotTimestamp, stockRecords, trackedProducts, warehouses]);
 
   const autoAllocations = useMemo<AutoAllocation[]>(() => {
     return stockRecords.slice(0, 12).map((record, index) => {
@@ -244,7 +245,7 @@ export const PharmacyStocksOverview: React.FC = () => {
 
       return {
         id: `alloc-${index + 1}`,
-        runAt: new Date(Date.now() - index * 5 * 60 * 60 * 1000).toISOString(),
+        runAt: new Date(snapshotTimestamp - index * 5 * 60 * 60 * 1000).toISOString(),
         warehouseName: warehouse?.name ?? "Depozit necunoscut",
         pharmacyName: pharmacy?.name ?? "Farmacie necunoscuta",
         productName: product?.name ?? "Produs necunoscut",
@@ -253,14 +254,14 @@ export const PharmacyStocksOverview: React.FC = () => {
         status,
       };
     });
-  }, [stockRecords, warehouses, pharmacies, trackedProducts]);
+  }, [pharmacies, snapshotTimestamp, stockRecords, trackedProducts, warehouses]);
 
   const traceabilityRows = useMemo<BatchTraceability[]>(() => {
     return stockRecords.slice(0, 14).map((record, index) => {
       const warehouse = warehouses.find((item) => item.id === record.warehouseId);
       const pharmacy = pharmacies.find((item) => item.id === record.pharmacyId);
       const product = trackedProducts.find((item) => item.id === record.productId);
-      const expiresAt = new Date(Date.now() + (index - 4) * 14 * 24 * 60 * 60 * 1000);
+      const expiresAt = new Date(snapshotTimestamp + (index - 4) * 14 * 24 * 60 * 60 * 1000);
 
       return {
         id: `lot-${index + 1}`,
@@ -273,7 +274,7 @@ export const PharmacyStocksOverview: React.FC = () => {
         quantity: deterministic(`lot-qty-${record.productId}-${index}`, 2, 90),
       };
     });
-  }, [stockRecords, warehouses, pharmacies, trackedProducts]);
+  }, [pharmacies, snapshotTimestamp, stockRecords, trackedProducts, warehouses]);
 
   const stockByWarehouse = useMemo(() => {
     return warehouses.map((warehouse) => {
@@ -302,7 +303,7 @@ export const PharmacyStocksOverview: React.FC = () => {
         </div>
         <div className="inline-flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 py-2 text-sm text-blue-700">
           <Activity className="h-4 w-4" />
-          Actualizare snapshot: {new Date().toLocaleTimeString("ro-RO")}
+          Actualizare snapshot: {new Date(snapshotTimestamp).toLocaleTimeString("ro-RO")}
         </div>
       </div>
 
@@ -524,7 +525,8 @@ export const PharmacyStocksOverview: React.FC = () => {
             </thead>
             <tbody>
               {traceabilityRows.map((item) => {
-                const expiringSoon = new Date(item.expiresAt).getTime() - Date.now() < 45 * 24 * 60 * 60 * 1000;
+                const expiringSoon =
+                  new Date(item.expiresAt).getTime() - snapshotTimestamp < 45 * 24 * 60 * 60 * 1000;
                 return (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-3 text-slate-700">

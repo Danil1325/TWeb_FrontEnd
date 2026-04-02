@@ -5,7 +5,7 @@ import logo from "../assets/logo_black.png";
 import "./header.scss";
 import React from "react";
 import { ShoppingCart } from "lucide-react";
-import { useCart } from "../context/CartContext";
+import { useCart } from "../context/useCart";
 
 const navigation = [
   { name: "Home", href: "/" },

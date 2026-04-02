@@ -7,7 +7,7 @@ import {
   Snowflake,
   TimerReset,
 } from "lucide-react";
-import { products } from "../../data/products";
+import { getStoredProducts } from "../../data/productStore";
 
 interface WarehouseStockRow {
   id: string;
@@ -29,7 +29,7 @@ const zoneSnapshots = [
   { id: "COLD", label: "Cold chain", occupancy: 81, bins: 12 },
 ];
 
-const stockRows: WarehouseStockRow[] = products.slice(0, 8).map((product, index) => {
+const stockRows: WarehouseStockRow[] = getStoredProducts().slice(0, 8).map((product, index) => {
   const threshold = 90 + index * 12;
   const quantity = Math.max(24, product.stockQuantity - index * 67);
   const reserved = 12 + index * 5;

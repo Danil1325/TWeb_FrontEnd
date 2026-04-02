@@ -151,8 +151,7 @@ const WarehouseFormModal: React.FC<{
   assignableUsers: AdminUser[];
   initial?: WarehouseFormData;
   onClose: () => void;
-  // eslint-disable-next-line no-unused-vars
-  onSave: (...args: [WarehouseFormData]) => void;
+  onSave: (data: WarehouseFormData) => void;
 }> = ({ isOpen, title, assignableUsers, initial, onClose, onSave }) => {
   const [form, setForm] = useState<WarehouseFormData>(initial || defaultForm);
 

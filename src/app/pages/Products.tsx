@@ -1,13 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, ShoppingCart } from 'lucide-react';
-import { products, categories } from '../data/products';
-import { useCart } from '../context/CartContext';
+import { getProductCategories, getStoredProducts } from '../data/productStore';
+import { useCart } from '../context/useCart';
 import { toast } from 'sonner';
 
 export const Products: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { addToCart } = useCart();
+  const products = useMemo(() => getStoredProducts(), []);
+  const categories = useMemo(() => getProductCategories(), []);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'All Products');
@@ -31,7 +33,7 @@ export const Products: React.FC = () => {
       
       return matchesSearch && matchesCategory && matchesPrice && matchesStock && matchesPrescription;
     });
-  }, [searchTerm, selectedCategory, priceRange, stockFilter, prescriptionFilter]);
+  }, [products, searchTerm, selectedCategory, priceRange, stockFilter, prescriptionFilter]);
 
   const handleAddToCart = (product: typeof products[0]) => {
     addToCart({
