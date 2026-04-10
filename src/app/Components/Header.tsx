@@ -1,5 +1,5 @@
 import { AiOutlineUser } from "react-icons/ai";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 // @ts-ignore
 import logo from "../assets/logo_black.png";
 import "./header.scss";
@@ -7,7 +7,7 @@ import React from "react";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "../context/useCart";
 
-const navigation = [
+const baseNavigation = [
   { name: "Home", href: "/" },
   { name: "About", href: "/about" },
   { name: "Shop", href: "/products" },
@@ -21,8 +21,20 @@ function classNames(...classes: Array<string | boolean | undefined>) {
 }
 
 export default function Header() {
+  useLocation();
   const { totalItems } = useCart();
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const userRole = localStorage.getItem("userRole");
+  const dashboardPathByRole: Record<string, string> = {
+    pharmacy: "/pharmacy/dashboard",
+    admin: "/admin/dashboard",
+    warehouse: "/warehouse/dashboard",
+  };
+  const dashboardPath = userRole ? dashboardPathByRole[userRole] : undefined;
+  const navigation =
+    isLoggedIn && userRole === "pharmacy"
+      ? [...baseNavigation, { name: "Dashboard", href: "/pharmacy/dashboard" }]
+      : baseNavigation;
 
   return (
     <nav className="relative bg-indigo-500 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-white/10 border rounded-3xl m-4">
@@ -73,12 +85,12 @@ export default function Header() {
                 )}
               </Link>
 
-              {isLoggedIn ? (
+              {isLoggedIn && dashboardPath ? (
                 <Link
-                  to="/login"
+                  to={dashboardPath}
                   className="text-indigo-500 bg-gray-100 rounded-2xl px-3 py-1 flex items-center gap-2"
                 >
-                  Profile <AiOutlineUser />
+                  Dashboard <AiOutlineUser />
                 </Link>
               ) : (
                 <>

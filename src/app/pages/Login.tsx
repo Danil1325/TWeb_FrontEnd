@@ -58,11 +58,18 @@ export const Login: React.FC = () => {
         const usersRaw = localStorage.getItem('adminUsers');
         const storedUsers = usersRaw ? JSON.parse(usersRaw) : seedUsers;
         const approvedPharmacy = storedUsers.find(
-            (user: { email: string; password: string; role: string; status: string }) =>
-                user.email === email &&
-                user.password === password &&
-                user.role === 'Farmacie' &&
-                user.status === 'active'
+            (user: { email: string; password: string; role: string; status: string }) => {
+                const normalizedRole = String(user.role || '').toLowerCase();
+                const normalizedStatus = String(user.status || '').toLowerCase();
+                const isPharmacyRole = normalizedRole === 'farmacie' || normalizedRole === 'pharmacy';
+
+                return (
+                    user.email === email &&
+                    user.password === password &&
+                    isPharmacyRole &&
+                    normalizedStatus === 'active'
+                );
+            }
         );
 
         if (!approvedPharmacy) {
@@ -76,9 +83,10 @@ export const Login: React.FC = () => {
         }
 
         localStorage.setItem('userRole', 'pharmacy');
+        localStorage.setItem('userType', 'pharmacy');
 
         toast.success('Login successful!');
-        navigate('/pharmacy/dashboard');
+        navigate('/');
     };
 
     return (
