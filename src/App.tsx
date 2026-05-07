@@ -32,11 +32,10 @@ import { ShipmentDetails } from "./app/pages/pharmacy/ShipmentDetails";
 import { PharmacyLayout } from "./app/Components/dashboard/PharmacyLayout";
 import { WarehouseLayout } from "./app/Components/dashboard/WarehouseLayout";
 import { WarehouseDashboard } from "./app/pages/warehouse/Dashboard";
-import { WarehouseDeliveries } from "./app/pages/warehouse/Deliveries";
-import { WarehouseOrders } from "./app/pages/warehouse/Orders";
 import { WarehouseProducts } from "./app/pages/warehouse/Products";
 import { WarehouseStock } from "./app/pages/warehouse/Stock";
-
+import { WarehouseDeliveries } from "./app/pages/warehouse/Deliveries";
+import { WarehouseOrders } from "./app/pages/warehouse/Orders";
 
 function AdminRouteGuard({ children }: { children: React.ReactNode }) {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";

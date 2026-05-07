@@ -30,10 +30,21 @@ export const Checkout: React.FC = () => {
   const finalTotal = totalPrice + shippingCost + tax;
 
   const handlePlaceOrder = () => {
- 
-
     toast.success('Order placed successfully! You will receive a confirmation email shortly.');
     clearCart();
+    const userRole = localStorage.getItem('userRole');
+    if (userRole === 'pharmacy') {
+      navigate('/pharmacy/dashboard');
+      return;
+    }
+    if (userRole === 'admin') {
+      navigate('/admin/dashboard');
+      return;
+    }
+    if (userRole === 'warehouse') {
+      navigate('/warehouse/dashboard');
+      return;
+    }
     navigate('/');
   };
 
