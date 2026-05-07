@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { seedUsers } from '../data/users';
+import { getDashboardPath, login, saveAuthSession } from '../api/auth';
 
 export const Login: React.FC = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSubmit: NonNullable<React.ComponentProps<'form'>['onSubmit']> = (e) => {
+    const handleSubmit: NonNullable<React.ComponentProps<'form'>['onSubmit']> = async (e) => {
         e.preventDefault();
         setError('');
 
@@ -20,73 +21,19 @@ export const Login: React.FC = () => {
             return;
         }
 
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userEmail', email);
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userType');
-
-        if (email === 'admin@admin.com' && password === 'admin') {
-            localStorage.setItem('userRole', 'admin');
-            localStorage.setItem('userType', 'admin');
-            toast.success('Login successful! Welcome Admin');
-            navigate('/admin/dashboard');
-            return;
-        }
-
-        if (email === 'warehouse@warehouse.com' && password === 'warehouse') {
-            localStorage.setItem('userRole', 'warehouse');
-            localStorage.setItem('userType', 'warehouse');
-            toast.success('Login successful! Welcome Warehouse');
-            navigate('/warehouse/dashboard');
-            return;
-        }
-
-        const pendingRaw = localStorage.getItem('pendingPharmacyRegistrations');
-        const pending = pendingRaw ? JSON.parse(pendingRaw) : [];
-        const isPending = pending.some((item: { email: string }) => item.email === email);
-
-        if (isPending) {
-            setError('Cererea farmaciei este in asteptare. Vei putea accesa contul dupa aprobare.');
-            toast.error('Cont in asteptare aprobare');
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('userType');
-            return;
-        }
-
-        const usersRaw = localStorage.getItem('adminUsers');
-        const storedUsers = usersRaw ? JSON.parse(usersRaw) : seedUsers;
-        const approvedPharmacy = storedUsers.find(
-            (user: { email: string; password: string; role: string; status: string }) => {
-                const normalizedRole = String(user.role || '').toLowerCase();
-                const normalizedStatus = String(user.status || '').toLowerCase();
-                const isPharmacyRole = normalizedRole === 'farmacie' || normalizedRole === 'pharmacy';
-
-                return (
-                    user.email === email &&
-                    user.password === password &&
-                    isPharmacyRole &&
-                    normalizedStatus === 'active'
-                );
-            }
-        );
-
-        if (!approvedPharmacy) {
-            setError('Credentiale invalide sau contul nu este aprobat.');
+        setLoading(true);
+        try {
+            const auth = await login(email, password);
+            saveAuthSession(auth);
+            toast.success('Login successful!');
+            navigate(getDashboardPath(auth.user?.role), { replace: true });
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Credentiale invalide sau contul nu este aprobat.';
+            setError(message);
             toast.error('Acces respins');
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('userType');
-            return;
+        } finally {
+            setLoading(false);
         }
-
-        localStorage.setItem('userRole', 'pharmacy');
-        localStorage.setItem('userType', 'pharmacy');
-
-        toast.success('Login successful!');
-        navigate('/');
     };
 
     return (
@@ -155,9 +102,10 @@ export const Login: React.FC = () => {
 
                         <button
                             type="submit"
+                            disabled={loading}
                             className="w-full bg-indigo-500 text-white py-3 rounded-lg font-semibold hover:bg-indigo-500 transition mb-4"
                         >
-                            Login
+                            {loading ? 'Logging in...' : 'Login'}
                         </button>
 
                         <div className="text-center">

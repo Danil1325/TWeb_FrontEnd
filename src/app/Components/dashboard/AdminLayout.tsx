@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./Slidebar";
 import { LogOut, User } from "lucide-react";
+import { logout } from "../../api/auth";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -45,11 +46,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     navigate(routeMap[page] || "/admin/dashboard");
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("userType");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userEmail");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login", { replace: true });
   };
 

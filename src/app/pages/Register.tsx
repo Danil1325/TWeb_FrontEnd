@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Building2, User, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { clearAuthSession, registerPharmacy } from '../api/auth';
 
 export const Register: React.FC = () => {
     const navigate = useNavigate();
@@ -36,8 +37,7 @@ export const Register: React.FC = () => {
 
         setLoading(true);
         try {
-            const profilePayload = {
-                id: crypto.randomUUID(),
+            await registerPharmacy({
                 name: formData.name,
                 email: formData.email,
                 password: formData.password,
@@ -48,28 +48,13 @@ export const Register: React.FC = () => {
                 city: formData.city,
                 state: formData.state,
                 zipCode: formData.zipCode,
-                requestedAt: new Date().toISOString(),
-                status: 'pending',
-            };
-            const pendingRaw = localStorage.getItem('pendingPharmacyRegistrations');
-            const pending = pendingRaw ? JSON.parse(pendingRaw) : [];
-
-            const alreadyPending = pending.some((item: { email: string }) => item.email === formData.email);
-            if (alreadyPending) {
-                toast.error('Exista deja o cerere in asteptare pentru acest email.');
-                return;
-            }
-
-            localStorage.setItem('pendingPharmacyRegistrations', JSON.stringify([profilePayload, ...pending]));
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('userType');
+            });
+            clearAuthSession();
 
             toast.success('Cererea a fost trimisa. Vei putea intra dupa aprobarea SuperAdmin.');
             navigate('/login');
-        } catch {
-            toast.error('Registration failed. Please try again.');
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Registration failed. Please try again.');
         } finally {
             setLoading(false);
         }

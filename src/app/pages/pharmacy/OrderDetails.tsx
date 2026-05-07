@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle, Package, Clock, ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 
 type PharmacyOrder = {
   id: string;
@@ -31,19 +31,6 @@ export const OrderDetails: React.FC = () => {
     }
   }, [id]);
 
-  const changeStatus = (status: string) => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    try {
-      const arr: PharmacyOrder[] = JSON.parse(raw);
-      const updated = arr.map((o) => (o.id === id ? { ...o, status } : o));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      setOrder(updated.find((o) => o.id === id) || null);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   if (!order) {
     return (
       <div className="max-w-3xl mx-auto py-8">
@@ -70,19 +57,9 @@ export const OrderDetails: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <select
-              value={order.status}
-              onChange={(e) => changeStatus(e.target.value)}
-              className="text-sm rounded-md px-3 py-1 bg-white border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option>Pending</option>
-              <option>Confirmed</option>
-              <option>Delivered</option>
-            </select>
-            <button onClick={() => changeStatus('Delivered')} className="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700">
-              <CheckCircle className="w-4 h-4" />
-              Mark Delivered
-            </button>
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              Status: {order.status}
+            </span>
             <button onClick={() => {
               if (!confirm('Delete this order? This action cannot be undone.')) return;
               try {

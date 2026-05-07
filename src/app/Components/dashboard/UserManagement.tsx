@@ -1,19 +1,55 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  Plus,
   Edit2,
-  Trash2,
-  Key,
-  Lock,
-  Unlock,
   History,
+  Lock,
+  Plus,
+  RefreshCw,
   Search,
+  Trash2,
+  Unlock,
   X,
 } from "lucide-react";
-import { AdminUser, seedAuditEvents, users, UserAuditEvent, UserRole } from "../../data/users";
+import { toast } from "sonner";
+import { authFetch } from "../../api/auth";
 import { CustomSelect } from "./CustomSelect";
 
-interface UserFormData {
+type UserRole = "SuperAdmin" | "Warehouse" | "Farmacie";
+
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  status: "active" | "inactive";
+  phone?: string | null;
+  company?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt?: string | null;
+}
+
+interface UserAuditEvent {
+  id: string;
+  userId: string;
+  userEmail: string;
+  action: string;
+  details: string;
+  createdAt: string;
+}
+
+interface PendingPharmacyRegistration {
+  id: string;
+  contactName: string;
+  email: string;
+  pharmacyName: string;
+  pharmacyLicense: string;
+  phone: string;
+  requestedAt: string;
+  status: "pending" | "approved" | "rejected";
+}
+
+type UserFormData = {
   name: string;
   email: string;
   password: string;
@@ -21,123 +57,68 @@ interface UserFormData {
   status: "active" | "inactive";
   phone: string;
   company: string;
-}
-
-interface PendingPharmacyRegistration {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-  pharmacyName: string;
-  pharmacyLicense: string;
-  phone: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  requestedAt: string;
-  status: "pending";
-}
-
-const USERS_KEY = "adminUsers";
-const AUDIT_KEY = "adminUserAudit";
-const PENDING_KEY = "pendingPharmacyRegistrations";
-
-const mergeUsersByEmail = (baseUsers: AdminUser[], storedUsers: AdminUser[]): AdminUser[] => {
-  const merged = new Map<string, AdminUser>();
-
-  // Load file users first so they are always visible in the table.
-  baseUsers.forEach((u) => merged.set(u.email.toLowerCase(), u));
-
-  // Stored users can override file users (edited fields/status/password).
-  storedUsers.forEach((u) => merged.set(u.email.toLowerCase(), u));
-
-  return Array.from(merged.values());
 };
 
-const getStoredUsers = (): AdminUser[] => {
-  const raw = localStorage.getItem(USERS_KEY);
-  if (!raw) return users;
-  try {
-    const parsed = JSON.parse(raw) as AdminUser[];
-    if (!Array.isArray(parsed)) return users;
-    return mergeUsersByEmail(users, parsed);
-  } catch {
-    return users;
-  }
+const formatDate = (value?: string | null) => {
+  if (!value) return "Never";
+  return new Date(value).toLocaleString("ro-RO");
 };
 
-const getStoredAudit = (): UserAuditEvent[] => {
-  const raw = localStorage.getItem(AUDIT_KEY);
-  if (!raw) return seedAuditEvents;
-  try {
-    const parsed = JSON.parse(raw) as UserAuditEvent[];
-    return Array.isArray(parsed) ? parsed : seedAuditEvents;
-  } catch {
-    return seedAuditEvents;
-  }
+const emptyForm: UserFormData = {
+  name: "",
+  email: "",
+  password: "",
+  role: "Farmacie",
+  status: "active",
+  phone: "",
+  company: "",
 };
 
-const getStoredPending = (): PendingPharmacyRegistration[] => {
-  const raw = localStorage.getItem(PENDING_KEY);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as PendingPharmacyRegistration[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
-const formatNow = () => new Date().toLocaleString("ro-RO");
+const toFormData = (user: AdminUser): UserFormData => ({
+  name: user.name,
+  email: user.email,
+  password: "",
+  role: user.role,
+  status: user.status,
+  phone: user.phone ?? "",
+  company: user.company ?? "",
+});
 
 const UserFormModal: React.FC<{
   isOpen: boolean;
+  mode: "create" | "edit";
   initial?: UserFormData;
-  title: string;
   onClose: () => void;
-  onSave: (data: UserFormData) => void;
-}> = ({ isOpen, initial, title, onClose, onSave }) => {
-  const [form, setForm] = useState<UserFormData>(
-    initial || {
-      name: "",
-      email: "",
-      password: "",
-      role: "Farmacie",
-      status: "active",
-      phone: "",
-      company: "",
-    }
-  );
+  onSave: (data: UserFormData) => Promise<void>;
+}> = ({ isOpen, mode, initial, onClose, onSave }) => {
+  const [form, setForm] = useState<UserFormData>(initial ?? emptyForm);
+  const [saving, setSaving] = useState(false);
 
-  React.useEffect(() => {
-    setForm(
-      initial || {
-        name: "",
-        email: "",
-        password: "",
-        role: "Farmacie",
-        status: "active",
-        phone: "",
-        company: "",
-      }
-    );
+  useEffect(() => {
+    setForm(initial ?? emptyForm);
   }, [initial, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(form);
-    onClose();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      await onSave(form);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-xl">
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-lg font-bold text-slate-900">{title}</h3>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
+          <h3 className="text-lg font-bold text-slate-900">
+            {mode === "create" ? "Creeaza utilizator" : "Editeaza utilizator"}
+          </h3>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-700" type="button">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -158,13 +139,17 @@ const UserFormModal: React.FC<{
               required
               className="px-3 py-2 border rounded-lg"
             />
-            <input
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="Parola"
-              required
-              className="px-3 py-2 border rounded-lg"
-            />
+            {mode === "create" && (
+              <input
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder="Parola"
+                type="password"
+                minLength={8}
+                required
+                className="px-3 py-2 border rounded-lg"
+              />
+            )}
             <input
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -196,8 +181,16 @@ const UserFormModal: React.FC<{
             />
           </div>
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">Anulare</button>
-            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg">Salveaza</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
+              Anulare
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:bg-gray-400"
+            >
+              {saving ? "Se salveaza..." : "Salveaza"}
+            </button>
           </div>
         </form>
       </div>
@@ -206,44 +199,38 @@ const UserFormModal: React.FC<{
 };
 
 export const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<AdminUser[]>(() => getStoredUsers());
-  const [audit, setAudit] = useState<UserAuditEvent[]>(() => getStoredAudit());
-  const [pendingPharmacies, setPendingPharmacies] = useState<PendingPharmacyRegistration[]>(() => getStoredPending());
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [audit, setAudit] = useState<UserAuditEvent[]>([]);
+  const [pendingPharmacies, setPendingPharmacies] = useState<PendingPharmacyRegistration[]>([]);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState<UserRole | "all">("all");
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
+  const [auditUser, setAuditUser] = useState<AdminUser | null>(null);
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [auditUser, setAuditUser] = useState<AdminUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const persistUsers = (next: AdminUser[]) => {
-    setUsers(next);
-    localStorage.setItem(USERS_KEY, JSON.stringify(next));
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [usersData, pendingData] = await Promise.all([
+        authFetch<AdminUser[]>("/api/admin/users"),
+        authFetch<PendingPharmacyRegistration[]>("/api/pharmacy-registration-requests?status=pending"),
+      ]);
+
+      setUsers(usersData);
+      setPendingPharmacies(pendingData);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Nu am putut incarca utilizatorii.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const persistAudit = (next: UserAuditEvent[]) => {
-    setAudit(next);
-    localStorage.setItem(AUDIT_KEY, JSON.stringify(next));
-  };
-
-  const persistPending = (next: PendingPharmacyRegistration[]) => {
-    setPendingPharmacies(next);
-    localStorage.setItem(PENDING_KEY, JSON.stringify(next));
-  };
-
-  const pushAudit = (userId: string, action: UserAuditEvent["action"], details: string) => {
-    const next = [
-      {
-        id: crypto.randomUUID(),
-        userId,
-        action,
-        timestamp: formatNow(),
-        details,
-      },
-      ...audit,
-    ];
-    persistAudit(next);
-  };
+  useEffect(() => {
+    void loadData();
+  }, []);
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -256,127 +243,141 @@ export const UserManagement: React.FC = () => {
     });
   }, [users, search, role, status]);
 
-  const toFormData = (u: AdminUser): UserFormData => ({
-    name: u.name,
-    email: u.email,
-    password: u.password,
-    role: u.role,
-    status: u.status,
-    phone: u.phone || "",
-    company: u.company || "",
-  });
-
-  const handleCreate = (data: UserFormData) => {
-    const now = formatNow();
-    const newUser: AdminUser = {
-      id: crypto.randomUUID(),
-      name: data.name,
-      email: data.email,
-      password: data.password,
-      role: data.role,
-      status: data.status,
-      phone: data.phone,
-      company: data.company,
-      createdAt: now,
-      lastActivity: "User created",
-      lastLogin: "Never",
-      lastPasswordReset: "Never",
-    };
-    persistUsers([newUser, ...users]);
-    pushAudit(newUser.id, "user_created", `Created user ${newUser.email}`);
+  const openAudit = async (user: AdminUser) => {
+    setAuditUser(user);
+    try {
+      const logs = await authFetch<UserAuditEvent[]>(`/api/admin/users/audit-logs?userId=${user.id}`);
+      setAudit(logs);
+    } catch (err) {
+      setAudit([]);
+      toast.error(err instanceof Error ? err.message : "Nu am putut incarca auditul.");
+    }
   };
 
-  const handleEdit = (data: UserFormData) => {
+  const handleToggleStatus = async (user: AdminUser) => {
+    setActionLoading(user.id);
+    try {
+      const updated = await authFetch<AdminUser>(`/api/admin/users/${user.id}/toggle-status`, {
+        method: "PATCH",
+      });
+      setUsers((current) => current.map((u) => (u.id === updated.id ? updated : u)));
+      toast.success(`Status schimbat in ${updated.status}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Nu am putut schimba statusul.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCreate = async (data: UserFormData) => {
+    try {
+      const created = await authFetch<AdminUser>("/api/admin/users", {
+        method: "POST",
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          status: data.status,
+          phone: data.phone,
+          company: data.company,
+        }),
+      });
+
+      setUsers((current) => [created, ...current]);
+      toast.success(`Utilizatorul ${created.email} a fost creat.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Nu am putut crea utilizatorul.");
+      throw err;
+    }
+  };
+
+  const handleEdit = async (data: UserFormData) => {
     if (!editing) return;
-    const next = users.map((u) =>
-      u.id === editing.id
-        ? {
-            ...u,
-            name: data.name,
-            email: data.email,
-            password: data.password,
-            role: data.role,
-            status: data.status,
-            phone: data.phone,
-            company: data.company,
-            lastActivity: "User updated",
-          }
-        : u
-    );
-    persistUsers(next);
-    pushAudit(editing.id, "user_updated", `Updated user ${data.email}`);
-    setEditing(null);
+
+    try {
+      const updated = await authFetch<AdminUser>(`/api/admin/users/${editing.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          role: data.role,
+          status: data.status,
+          phone: data.phone,
+          company: data.company,
+        }),
+      });
+
+      setUsers((current) => current.map((user) => (user.id === updated.id ? updated : user)));
+      setEditing(null);
+      toast.success(`Utilizatorul ${updated.email} a fost actualizat.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Nu am putut actualiza utilizatorul.");
+      throw err;
+    }
   };
 
-  const handleDelete = (user: AdminUser) => {
-    if (!confirm(`Stergi utilizatorul ${user.email}?`)) return;
-    persistUsers(users.filter((u) => u.id !== user.id));
-    pushAudit(user.id, "user_deleted", `Deleted user ${user.email}`);
-  };
-
-  const handleToggleStatus = (user: AdminUser) => {
-    const nextStatus: AdminUser["status"] = user.status === "active" ? "inactive" : "active";
-    const next = users.map((u) =>
-      u.id === user.id ? { ...u, status: nextStatus, lastActivity: `Status changed to ${nextStatus}` } : u
-    );
-    persistUsers(next);
-    pushAudit(user.id, "status_changed", `Changed status to ${nextStatus}`);
-  };
-
-  const handleResetPassword = (user: AdminUser) => {
-    const generated = `pw-${Math.random().toString(36).slice(2, 10)}`;
-    const now = formatNow();
-    const next = users.map((u) =>
-      u.id === user.id
-        ? { ...u, password: generated, lastPasswordReset: now, lastActivity: "Password reset" }
-        : u
-    );
-    persistUsers(next);
-    pushAudit(user.id, "password_reset", `Password reset to generated value`);
-    alert(`Parola noua pentru ${user.email}: ${generated}`);
-  };
-
-  const handleApprovePharmacy = (request: PendingPharmacyRegistration) => {
-    const exists = users.some((u) => u.email === request.email);
-    if (exists) {
-      alert("Exista deja un utilizator cu acest email.");
+  const handleDelete = async (user: AdminUser) => {
+    const currentUserId = localStorage.getItem("userId");
+    if (user.id === currentUserId) {
+      toast.error("Nu poti sterge contul cu care esti autentificat.");
       return;
     }
 
-    const now = formatNow();
-    const newUser: AdminUser = {
-      id: request.id,
-      name: request.name,
-      email: request.email,
-      password: request.password,
-      role: "Farmacie",
-      status: "active",
-      phone: request.phone,
-      company: request.pharmacyName,
-      createdAt: request.requestedAt,
-      lastActivity: "Approved by SuperAdmin",
-      lastLogin: "Never",
-      lastPasswordReset: "Never",
-    };
+    if (!confirm(`Stergi utilizatorul ${user.email}?`)) return;
 
-    persistUsers([newUser, ...users]);
-    persistPending(pendingPharmacies.filter((p) => p.id !== request.id));
-    pushAudit(newUser.id, "user_created", `Approved pharmacy registration for ${newUser.email} at ${now}`);
+    setActionLoading(user.id);
+    try {
+      await authFetch<void>(`/api/admin/users/${user.id}`, {
+        method: "DELETE",
+      });
+      setUsers((current) => current.filter((item) => item.id !== user.id));
+      toast.success(`Utilizatorul ${user.email} a fost sters.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Nu am putut sterge utilizatorul.");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
-  const handleRejectPharmacy = (request: PendingPharmacyRegistration) => {
-    persistPending(pendingPharmacies.filter((p) => p.id !== request.id));
-    pushAudit(request.id, "user_deleted", `Rejected pharmacy registration for ${request.email}`);
+  const handleApprovePharmacy = async (request: PendingPharmacyRegistration) => {
+    setActionLoading(request.id);
+    try {
+      await authFetch(`/api/pharmacy-registration-requests/${request.id}/approve`, {
+        method: "POST",
+        body: JSON.stringify({ reviewerUserId: localStorage.getItem("userId"), notes: "Approved from admin dashboard" }),
+      });
+      toast.success(`Farmacia ${request.pharmacyName} a fost aprobata.`);
+      await loadData();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Nu am putut aproba cererea.");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
-  const userAudit = auditUser ? audit.filter((a) => a.userId === auditUser.id) : [];
+  const handleRejectPharmacy = async (request: PendingPharmacyRegistration) => {
+    setActionLoading(request.id);
+    try {
+      await authFetch(`/api/pharmacy-registration-requests/${request.id}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ reviewerUserId: localStorage.getItem("userId"), notes: "Rejected from admin dashboard" }),
+      });
+      toast.success(`Cererea pentru ${request.pharmacyName} a fost respinsa.`);
+      await loadData();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Nu am putut respinge cererea.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Management Utilizatori</h1>
-          <p className="text-slate-600 mt-1">Superadminul poate controla tot sistemul.</p>
+          <p className="text-slate-600 mt-1">Datele vin din backend si sunt protejate prin rolul SuperAdmin.</p>
         </div>
         <button
           onClick={() => setCreateOpen(true)}
@@ -418,11 +419,21 @@ export const UserManagement: React.FC = () => {
         />
       </div>
 
+      <div className="flex justify-end">
+        <button
+          onClick={() => void loadData()}
+          className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Reincarca datele
+        </button>
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
         <div className="px-4 py-3 border-b bg-amber-50">
           <h2 className="font-semibold text-slate-900">Farmacii in asteptare aprobare</h2>
           <p className="text-sm text-slate-600">
-            Cereri din pagina de inregistrare: {pendingPharmacies.length}
+            Cereri din baza de date: {pendingPharmacies.length}
           </p>
         </div>
         <table className="w-full text-sm">
@@ -446,23 +457,25 @@ export const UserManagement: React.FC = () => {
                 <tr key={p.id} className="border-t">
                   <td className="px-4 py-3">
                     <div className="font-medium text-slate-900">{p.pharmacyName}</div>
-                    <div className="text-slate-500">{p.name}</div>
+                    <div className="text-slate-500">{p.contactName}</div>
                   </td>
                   <td className="px-4 py-3">{p.email}</td>
                   <td className="px-4 py-3">{p.pharmacyLicense}</td>
                   <td className="px-4 py-3">{p.phone}</td>
-                  <td className="px-4 py-3">{new Date(p.requestedAt).toLocaleString("ro-RO")}</td>
+                  <td className="px-4 py-3">{formatDate(p.requestedAt)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleApprovePharmacy(p)}
-                        className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs"
+                        disabled={actionLoading === p.id}
+                        onClick={() => void handleApprovePharmacy(p)}
+                        className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs disabled:bg-gray-400"
                       >
                         Aproba
                       </button>
                       <button
-                        onClick={() => handleRejectPharmacy(p)}
-                        className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs"
+                        disabled={actionLoading === p.id}
+                        onClick={() => void handleRejectPharmacy(p)}
+                        className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs disabled:bg-gray-400"
                       >
                         Respinge
                       </button>
@@ -482,63 +495,79 @@ export const UserManagement: React.FC = () => {
               <th className="text-left px-4 py-3">Utilizator</th>
               <th className="text-left px-4 py-3">Rol</th>
               <th className="text-left px-4 py-3">Status</th>
-              <th className="text-left px-4 py-3">Ultima activitate</th>
+              <th className="text-left px-4 py-3">Companie</th>
               <th className="text-left px-4 py-3">Ultimul login</th>
-              <th className="text-left px-4 py-3">Resetare parola</th>
               <th className="text-left px-4 py-3">Actiuni</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((u) => (
-              <tr key={u.id} className="border-t">
-                <td className="px-4 py-3">
-                  <div className="font-medium text-slate-900">{u.name}</div>
-                  <div className="text-slate-500">{u.email}</div>
-                </td>
-                <td className="px-4 py-3">{u.role}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs ${u.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                    {u.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3">{u.lastActivity}</td>
-                <td className="px-4 py-3">{u.lastLogin}</td>
-                <td className="px-4 py-3">{u.lastPasswordReset}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => setEditing(u)} className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Editare">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleToggleStatus(u)} className="p-2 text-amber-600 hover:bg-amber-50 rounded" title="Activare/Dezactivare">
-                      {u.status === "active" ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-                    </button>
-                    <button onClick={() => handleResetPassword(u)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded" title="Resetare parola">
-                      <Key className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => setAuditUser(u)} className="p-2 text-purple-600 hover:bg-purple-50 rounded" title="Audit log">
-                      <History className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(u)} className="p-2 text-red-600 hover:bg-red-50 rounded" title="Stergere">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-6 text-center text-slate-500">Se incarca...</td>
               </tr>
-            ))}
+            ) : (
+              filtered.map((u) => (
+                <tr key={u.id} className="border-t">
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-slate-900">{u.name}</div>
+                    <div className="text-slate-500">{u.email}</div>
+                  </td>
+                  <td className="px-4 py-3">{u.role}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded-full text-xs ${u.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                      {u.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">{u.company || "-"}</td>
+                  <td className="px-4 py-3">{formatDate(u.lastLoginAt)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <button
+                        disabled={actionLoading === u.id}
+                        onClick={() => setEditing(u)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded disabled:text-gray-400"
+                        title="Editare"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        disabled={actionLoading === u.id}
+                        onClick={() => void handleToggleStatus(u)}
+                        className="p-2 text-amber-600 hover:bg-amber-50 rounded disabled:text-gray-400"
+                        title="Activare/Dezactivare"
+                      >
+                        {u.status === "active" ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                      </button>
+                      <button onClick={() => void openAudit(u)} className="p-2 text-purple-600 hover:bg-purple-50 rounded" title="Audit log">
+                        <History className="w-4 h-4" />
+                      </button>
+                      <button
+                        disabled={actionLoading === u.id}
+                        onClick={() => void handleDelete(u)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded disabled:text-gray-400"
+                        title="Stergere"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
       <UserFormModal
         isOpen={createOpen}
-        title="Creeaza utilizator"
+        mode="create"
         onClose={() => setCreateOpen(false)}
         onSave={handleCreate}
       />
 
       <UserFormModal
         isOpen={Boolean(editing)}
-        title="Editeaza utilizator"
+        mode="edit"
         initial={editing ? toFormData(editing) : undefined}
         onClose={() => setEditing(null)}
         onSave={handleEdit}
@@ -563,15 +592,15 @@ export const UserManagement: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {userAudit.length === 0 ? (
+                  {audit.length === 0 ? (
                     <tr>
                       <td colSpan={3} className="px-4 py-6 text-center text-slate-500">Fara evenimente.</td>
                     </tr>
                   ) : (
-                    userAudit.map((a) => (
+                    audit.map((a) => (
                       <tr key={a.id} className="border-t">
                         <td className="px-4 py-3">{a.action}</td>
-                        <td className="px-4 py-3">{a.timestamp}</td>
+                        <td className="px-4 py-3">{formatDate(a.createdAt)}</td>
                         <td className="px-4 py-3">{a.details}</td>
                       </tr>
                     ))

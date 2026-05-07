@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Boxes,
   ClipboardList,
@@ -8,6 +8,10 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react";
+import type { PharmacyOrder } from "../../data/seeder";
+
+const PHARMACY_ORDERS_KEY = "pharmacyOrders";
+const ORDERS_LIST_KEY = "ordersList";
 
 interface WarehouseOrder {
   id: string;
@@ -19,7 +23,34 @@ interface WarehouseOrder {
   totes: number;
   picker: string;
   departure: string;
+  sourceId?: string;
+  isManaged?: boolean;
 }
+
+const parsePharmacyOrders = (key: string): PharmacyOrder[] => {
+  const raw = localStorage.getItem(key);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const mapPharmacyToWarehouseStatus = (status: string): WarehouseOrder["status"] => {
+  const normalizedStatus = String(status || "").toLowerCase();
+  if (normalizedStatus === "pending") return "Picking";
+  if (normalizedStatus === "confirmed") return "Packing";
+  if (normalizedStatus === "delivered") return "Ready to ship";
+  return "Quality check";
+};
+
+const mapWarehouseToPharmacyStatus = (status: WarehouseOrder["status"]): PharmacyOrder["status"] => {
+  if (status === "Ready to ship") return "Delivered";
+  if (status === "Picking") return "Pending";
+  return "Confirmed";
+};
 
 const ongoingOrders: WarehouseOrder[] = [
   {
@@ -82,14 +113,86 @@ const dispatchWindows = [
 ];
 
 export const WarehouseOrders: React.FC = () => {
+  const [allOrders, setAllOrders] = useState<WarehouseOrder[]>(ongoingOrders);
+  const [visibleOrdersCount, setVisibleOrdersCount] = useState<5 | 10 | 15>(10);
+
+  const loadOrders = () => {
+    const fromOrdersList = parsePharmacyOrders(ORDERS_LIST_KEY);
+    const fromPharmacyOrders = parsePharmacyOrders(PHARMACY_ORDERS_KEY);
+    const mergedSource = [...fromOrdersList, ...fromPharmacyOrders];
+
+    if (!mergedSource.length) {
+      setAllOrders(ongoingOrders);
+      return;
+    }
+
+    const uniqueById = new Map<string, PharmacyOrder>();
+    mergedSource.forEach((order) => uniqueById.set(order.id, order));
+
+    const mapped: WarehouseOrder[] = Array.from(uniqueById.values()).map((order) => ({
+      id: `WH-${order.id}`,
+      sourceId: order.id,
+      isManaged: true,
+      pharmacy: "Pharmacy Portal",
+      route: "Web checkout",
+      priority: order.items >= 20 ? "Urgent" : "Standard",
+      status: mapPharmacyToWarehouseStatus(order.status),
+      lineItems: order.items,
+      totes: Math.max(1, Math.ceil(order.items / 4)),
+      picker: "Auto-assigned",
+      departure: "TBD",
+    }));
+
+    setAllOrders([...mapped, ...ongoingOrders]);
+  };
+
+  const handleManagedStatusChange = (warehouseOrder: WarehouseOrder, status: WarehouseOrder["status"]) => {
+    if (!warehouseOrder.sourceId) return;
+
+    setAllOrders((prev) =>
+      prev.map((order) =>
+        order.id === warehouseOrder.id ? { ...order, status } : order
+      )
+    );
+
+    const nextPharmacyStatus = mapWarehouseToPharmacyStatus(status);
+    const updateBySourceId = (list: PharmacyOrder[]) =>
+      list.map((order) =>
+        order.id === warehouseOrder.sourceId ? { ...order, status: nextPharmacyStatus } : order
+      );
+
+    const nextOrdersList = updateBySourceId(parsePharmacyOrders(ORDERS_LIST_KEY));
+    const nextPharmacyOrders = updateBySourceId(parsePharmacyOrders(PHARMACY_ORDERS_KEY));
+
+    localStorage.setItem(ORDERS_LIST_KEY, JSON.stringify(nextOrdersList));
+    localStorage.setItem(PHARMACY_ORDERS_KEY, JSON.stringify(nextPharmacyOrders));
+    window.dispatchEvent(new Event("orders-list-updated"));
+    window.dispatchEvent(new Event("pharmacy-orders-updated"));
+  };
+
+  useEffect(() => {
+    loadOrders();
+
+    const handleUpdated = () => loadOrders();
+    window.addEventListener("orders-list-updated", handleUpdated);
+    window.addEventListener("pharmacy-orders-updated", handleUpdated);
+    window.addEventListener("storage", handleUpdated);
+
+    return () => {
+      window.removeEventListener("orders-list-updated", handleUpdated);
+      window.removeEventListener("pharmacy-orders-updated", handleUpdated);
+      window.removeEventListener("storage", handleUpdated);
+    };
+  }, []);
+
   const summary = useMemo(() => {
-    const activeOrders = ongoingOrders.length;
-    const urgentOrders = ongoingOrders.filter((order) => order.priority === "Urgent").length;
-    const readyOrders = ongoingOrders.filter((order) => order.status === "Ready to ship").length;
-    const totalTotes = ongoingOrders.reduce((sum, order) => sum + order.totes, 0);
+    const activeOrders = allOrders.length;
+    const urgentOrders = allOrders.filter((order) => order.priority === "Urgent").length;
+    const readyOrders = allOrders.filter((order) => order.status === "Ready to ship").length;
+    const totalTotes = allOrders.reduce((sum, order) => sum + order.totes, 0);
 
     return { activeOrders, urgentOrders, readyOrders, totalTotes };
-  }, []);
+  }, [allOrders]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -140,7 +243,7 @@ export const WarehouseOrders: React.FC = () => {
             <div>
               <p className="text-sm text-slate-500">QC pending</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">
-                {ongoingOrders.filter((order) => order.status === "Quality check").length}
+                {allOrders.filter((order) => order.status === "Quality check").length}
               </p>
             </div>
             <div className="rounded-2xl bg-indigo-100 p-3 text-indigo-700">
@@ -172,13 +275,29 @@ export const WarehouseOrders: React.FC = () => {
         </article>
       </section>
 
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.65fr_1fr]">
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[2.2fr_0.8fr]">
         <article className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-5 flex items-center gap-3">
-            <ClipboardList className="h-6 w-6 text-indigo-700" />
-            <div>
-              <h3 className="text-xl font-semibold text-slate-900">Order board</h3>
-              <p className="text-sm text-slate-500">Outbound orders currently processed by the warehouse team.</p>
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <ClipboardList className="h-6 w-6 text-indigo-700" />
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900">Order board</h3>
+                <p className="text-sm text-slate-500">Outbound orders currently processed by the warehouse team.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <label htmlFor="orders-view-count" className="font-medium text-slate-700">Show</label>
+              <select
+                id="orders-view-count"
+                value={visibleOrdersCount}
+                onChange={(e) => setVisibleOrdersCount(Number(e.target.value) as 5 | 10 | 15)}
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+              </select>
+              <span>orders</span>
             </div>
           </div>
 
@@ -195,7 +314,7 @@ export const WarehouseOrders: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {ongoingOrders.map((order) => {
+                {allOrders.slice(0, visibleOrdersCount).map((order) => {
                   const statusClasses =
                     order.status === "Picking"
                       ? "bg-amber-100 text-amber-700"
@@ -222,9 +341,24 @@ export const WarehouseOrders: React.FC = () => {
                       <td className="px-4 py-3 text-slate-700">{order.picker}</td>
                       <td className="px-4 py-3 text-slate-700">{order.departure}</td>
                       <td className="px-4 py-3">
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClasses}`}>
-                          {order.status}
-                        </span>
+                        {order.isManaged ? (
+                          <select
+                            value={order.status}
+                            onChange={(e) =>
+                              handleManagedStatusChange(order, e.target.value as WarehouseOrder["status"])
+                            }
+                            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option>Picking</option>
+                            <option>Packing</option>
+                            <option>Quality check</option>
+                            <option>Ready to ship</option>
+                          </select>
+                        ) : (
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClasses}`}>
+                            {order.status}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -235,25 +369,6 @@ export const WarehouseOrders: React.FC = () => {
         </article>
 
         <div className="space-y-6">
-          <article className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <div className="mb-4 flex items-center gap-3">
-              <PackageCheck className="h-6 w-6 text-emerald-700" />
-              <h3 className="text-xl font-semibold text-slate-900">Workflow snapshot</h3>
-            </div>
-            <div className="space-y-4">
-              {orderSteps.map((step) => (
-                <div key={step.id} className="rounded-2xl border border-slate-200 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="font-semibold text-slate-900">{step.title}</div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${step.tone}`}>
-                      {step.value}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
           <article className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <div className="mb-4 flex items-center gap-3">
               <Route className="h-6 w-6 text-cyan-700" />
@@ -276,6 +391,25 @@ export const WarehouseOrders: React.FC = () => {
                       }`}
                       style={{ width: `${window.capacity}%` }}
                     />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="mb-4 flex items-center gap-3">
+              <PackageCheck className="h-6 w-6 text-emerald-700" />
+              <h3 className="text-xl font-semibold text-slate-900">Workflow snapshot</h3>
+            </div>
+            <div className="space-y-4">
+              {orderSteps.map((step) => (
+                <div key={step.id} className="rounded-2xl border border-slate-200 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-semibold text-slate-900">{step.title}</div>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${step.tone}`}>
+                      {step.value}
+                    </span>
                   </div>
                 </div>
               ))}

@@ -36,13 +36,15 @@ import { WarehouseProducts } from "./app/pages/warehouse/Products";
 import { WarehouseStock } from "./app/pages/warehouse/Stock";
 import { WarehouseDeliveries } from "./app/pages/warehouse/Deliveries";
 import { WarehouseOrders } from "./app/pages/warehouse/Orders";
+import { AUTH_TOKEN_KEY } from "./app/api/auth";
 
 function AdminRouteGuard({ children }: { children: React.ReactNode }) {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
   const userType = localStorage.getItem("userType");
   const userRole = localStorage.getItem("userRole");
 
-  return isLoggedIn && (userType === "admin" || userRole === "admin") ? (
+  return token && isLoggedIn && (userType === "admin" || userRole === "admin") ? (
     <>{children}</>
   ) : (
     <Navigate to="/login" replace />
@@ -51,10 +53,24 @@ function AdminRouteGuard({ children }: { children: React.ReactNode }) {
 
 function WarehouseRouteGuard({ children }: { children: React.ReactNode }) {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
   const userType = localStorage.getItem("userType");
   const userRole = localStorage.getItem("userRole");
 
-  return isLoggedIn && (userType === "warehouse" || userRole === "warehouse") ? (
+  return token && isLoggedIn && (userType === "warehouse" || userRole === "warehouse") ? (
+    <>{children}</>
+  ) : (
+    <Navigate to="/login" replace />
+  );
+}
+
+function PharmacyRouteGuard({ children }: { children: React.ReactNode }) {
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const userType = localStorage.getItem("userType");
+  const userRole = localStorage.getItem("userRole");
+
+  return token && isLoggedIn && (userType === "pharmacy" || userRole === "pharmacy") ? (
     <>{children}</>
   ) : (
     <Navigate to="/login" replace />
@@ -102,20 +118,22 @@ export default function App() {
         <Route
           path="/pharmacy/*"
           element={
-            <PharmacyLayout>
-              <Routes>
-                <Route path="dashboard" element={<PharmacyDashboard />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="orders" element={<Orders />} />
-                <Route path="shipments" element={<Shipments />} />
-                <Route path="returns" element={<Returns />} />
-                <Route path="stock" element={<Stock />} />
-                <Route path="stock/:id" element={<StockDetails />} />
-                <Route path="order/:id" element={<OrderDetails />} />
-                <Route path="shipments/:id" element={<ShipmentDetails />} />
-                <Route path="returns/:id" element={<ReturnDetails />} />
-              </Routes>
-            </PharmacyLayout>
+            <PharmacyRouteGuard>
+              <PharmacyLayout>
+                <Routes>
+                  <Route path="dashboard" element={<PharmacyDashboard />} />
+                  <Route path="reports" element={<Reports />} />
+                  <Route path="orders" element={<Orders />} />
+                  <Route path="shipments" element={<Shipments />} />
+                  <Route path="returns" element={<Returns />} />
+                  <Route path="stock" element={<Stock />} />
+                  <Route path="stock/:id" element={<StockDetails />} />
+                  <Route path="order/:id" element={<OrderDetails />} />
+                  <Route path="shipments/:id" element={<ShipmentDetails />} />
+                  <Route path="returns/:id" element={<ReturnDetails />} />
+                </Routes>
+              </PharmacyLayout>
+            </PharmacyRouteGuard>
           }
         />
 

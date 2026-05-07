@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, User } from "lucide-react";
 import WarehouseSidebar from "./WarehouseSidebar";
+import { logout } from "../../api/auth";
 
 interface WarehouseLayoutProps {
   children: React.ReactNode;
@@ -31,11 +32,8 @@ export const WarehouseLayout: React.FC<WarehouseLayoutProps> = ({ children }) =>
     navigate(route, { replace: true });
   }, [activePage, navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("userType");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userRole");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login", { replace: true });
   };
 
