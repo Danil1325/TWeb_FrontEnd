@@ -1,40 +1,77 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Package, Clock, CheckCircle, AlertCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PharmacyOrder, samplePharmacyOrders, seedPharmacyOrders } from "../../data/seeder";
 const STORAGE_KEY = "pharmacyOrders";
+const ORDERS_LIST_KEY = "ordersList";
+
+const parseOrders = (key: string): PharmacyOrder[] => {
+	const raw = localStorage.getItem(key);
+	if (!raw) return [];
+	try {
+		const parsed = JSON.parse(raw);
+		return Array.isArray(parsed) ? parsed : [];
+	} catch {
+		return [];
+	}
+};
 
 export const Orders: React.FC = () => {
 	const [orders, setOrders] = useState<PharmacyOrder[]>([]);
 	const [selected, setSelected] = useState<PharmacyOrder | null>(null);
 	const navigate = useNavigate();
+	const hasLoadedRef = useRef(false);
+
+	const loadOrders = () => {
+		const pharmacyOrders = parseOrders(STORAGE_KEY);
+		const genericOrders = parseOrders(ORDERS_LIST_KEY);
+
+		if (pharmacyOrders.length || genericOrders.length) {
+			const mergedMap = new Map<string, PharmacyOrder>();
+			[...genericOrders, ...pharmacyOrders].forEach((order) => mergedMap.set(order.id, order));
+			const merged = Array.from(mergedMap.values());
+			setOrders(merged);
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+			hasLoadedRef.current = true;
+			return;
+		}
+
+		try {
+			seedPharmacyOrders(true);
+			setOrders(samplePharmacyOrders);
+			hasLoadedRef.current = true;
+		} catch (e) {
+			console.error('Failed to seed orders from shared seeder', e);
+		}
+	};
 
 	useEffect(() => {
-		const load = async () => {
-			const raw = localStorage.getItem(STORAGE_KEY);
-			if (raw) {
-				try {
-					const parsed = JSON.parse(raw);
-					if (Array.isArray(parsed) && parsed.length >= samplePharmacyOrders.length) {
-						setOrders(parsed);
-						return;
-					}
-				} catch (e) {
-					console.error("Invalid orders in localStorage", e);
-				}
-			}
-			// if no data or not enough entries -> seed via shared seeder (overwrite)
-			try {
-				seedPharmacyOrders(true);
-				setOrders(samplePharmacyOrders);
-			} catch (e) {
-				console.error('Failed to seed orders from shared seeder', e);
+		loadOrders();
+
+		const handleUpdated = () => loadOrders();
+		const handleVisibility = () => {
+			if (document.visibilityState === 'visible') {
+				loadOrders();
 			}
 		};
-		load();
+
+		window.addEventListener('pharmacy-orders-updated', handleUpdated);
+		window.addEventListener('orders-list-updated', handleUpdated);
+		window.addEventListener('storage', handleUpdated);
+		document.addEventListener('visibilitychange', handleVisibility);
+
+		return () => {
+			window.removeEventListener('pharmacy-orders-updated', handleUpdated);
+			window.removeEventListener('orders-list-updated', handleUpdated);
+			window.removeEventListener('storage', handleUpdated);
+			document.removeEventListener('visibilitychange', handleVisibility);
+		};
 	}, []);
 
 	useEffect(() => {
+		if (!hasLoadedRef.current) {
+			return;
+		}
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
 	}, [orders]);
 
@@ -48,10 +85,6 @@ export const Orders: React.FC = () => {
 			date: new Date().toISOString().split("T")[0],
 		};
 		setOrders((s) => [next, ...s]);
-	};
-
-	const changeStatus = (id: string, status: string) => {
-		setOrders((s) => s.map((o) => (o.id === id ? { ...o, status } : o)));
 	};
 
 	const removeOrder = (id: string) => {
@@ -143,18 +176,6 @@ export const Orders: React.FC = () => {
 									<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
 										<div className="flex items-center gap-3 justify-end">
 											  <button onClick={() => navigate(`/pharmacy/order/${order.id}`)} className="text-indigo-600 hover:underline">View</button>
-																	<div className="relative inline-block">
-																		<select
-																			value={order.status}
-																			onChange={(e) => changeStatus(order.id, e.target.value)}
-																			className="text-sm rounded-md px-3 py-1 bg-white border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-																			aria-label={`Change status for ${order.id}`}
-																		>
-																			<option>Pending</option>
-																			<option>Confirmed</option>
-																			<option>Delivered</option>
-																		</select>
-																	</div>
 																	<button
 																		onClick={() => removeOrder(order.id)}
 																		className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-red-50 text-red-600 border border-red-100 hover:bg-red-100"

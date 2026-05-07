@@ -3,6 +3,7 @@ import { LogOut, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import PharmacySidebar from "./PharmacySidebar";
 import { PharmacyProfile } from "../../pages/pharmacy/Profile";
+import { logout } from "../../api/auth";
 
 interface PharmacyLayoutProps {
   children: React.ReactNode;
@@ -16,10 +17,8 @@ export const PharmacyLayout: React.FC<PharmacyLayoutProps> = ({ children }) => {
 
   const userEmail = localStorage.getItem("userEmail") || "Pharmacy User";
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userRole");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login", { replace: true });
   };
 

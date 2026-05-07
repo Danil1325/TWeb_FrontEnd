@@ -3,6 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, CreditCard, Building2, Truck, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCart } from '../context/useCart';
+import type { PharmacyOrder } from '../data/seeder';
+
+const PHARMACY_ORDERS_KEY = 'pharmacyOrders';
+const ORDERS_LIST_KEY = 'ordersList';
+
+const readOrders = (key: string): PharmacyOrder[] => {
+  const raw = localStorage.getItem(key);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
 
 export const Checkout: React.FC = () => {
   const navigate = useNavigate();
@@ -30,11 +45,41 @@ export const Checkout: React.FC = () => {
   const finalTotal = totalPrice + shippingCost + tax;
 
   const handlePlaceOrder = () => {
+    const userRole = (localStorage.getItem('userRole') || '').toLowerCase();
+    const userType = (localStorage.getItem('userType') || '').toLowerCase();
+    const isPharmacyUser =
+      userRole === 'pharmacy' ||
+      userRole === 'farmacie' ||
+      userType === 'pharmacy' ||
+      userType === 'farmacie';
+
+    if (isPharmacyUser || localStorage.getItem('isLoggedIn') === 'true') {
+      const ordersList = readOrders(ORDERS_LIST_KEY);
+      const pharmacyOrders = readOrders(PHARMACY_ORDERS_KEY);
+
+      const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+      const newOrder: PharmacyOrder = {
+        id: `PH-ORD-${Date.now().toString().slice(-6)}`,
+        supplier: 'Warehouse Central',
+        status: 'Pending',
+        items: itemCount,
+        total: `$${finalTotal.toFixed(2)}`,
+        date: new Date().toISOString().split('T')[0],
+        notes: `Placed from checkout by ${localStorage.getItem('userEmail') || 'pharmacy user'}`,
+      };
+
+      // Step 1: append in the global orders list
+      localStorage.setItem(ORDERS_LIST_KEY, JSON.stringify([newOrder, ...ordersList]));
+      // Step 2: mirror the order in pharmacy orders
+      localStorage.setItem(PHARMACY_ORDERS_KEY, JSON.stringify([newOrder, ...pharmacyOrders]));
+      window.dispatchEvent(new Event('orders-list-updated'));
+      window.dispatchEvent(new Event('pharmacy-orders-updated'));
+    }
+
     toast.success('Order placed successfully! You will receive a confirmation email shortly.');
     clearCart();
-    const userRole = localStorage.getItem('userRole');
-    if (userRole === 'pharmacy') {
-      navigate('/pharmacy/dashboard');
+    if (isPharmacyUser) {
+      setStep('cart');
       return;
     }
     if (userRole === 'admin') {
