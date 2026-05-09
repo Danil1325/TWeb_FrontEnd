@@ -10,9 +10,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { users as seedUsers } from "../../data/users";
+import { authFetch } from "../../api/auth";
+import type { AdminUser } from "../../data/users";
 
-const USERS_KEY = "adminUsers";
 const WAREHOUSES_KEY = "adminWarehouses";
 
 interface SidebarProps {
@@ -21,17 +21,6 @@ interface SidebarProps {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
 }
-
-const getStoredUsers = () => {
-  const raw = localStorage.getItem(USERS_KEY);
-  if (!raw) return seedUsers;
-  try {
-    const users = JSON.parse(raw);
-    return Array.isArray(users) ? users : seedUsers;
-  } catch {
-    return seedUsers;
-  }
-};
 
 const getWarehouseCount = () => {
   const raw = localStorage.getItem(WAREHOUSES_KEY);
@@ -44,10 +33,19 @@ const getWarehouseCount = () => {
   }
 };
 
-const getSidebarCounts = () => {
-  const users = getStoredUsers();
-  const usersCount = users.length;
-  const pharmaciesCount = users.filter((user) => user.role === "Farmacie").length;
+const getSidebarCounts = async () => {
+  let usersCount = 0;
+  let pharmaciesCount = 0;
+
+  try {
+    const users = await authFetch<AdminUser[]>("/api/admin/users");
+    usersCount = users.length;
+    pharmaciesCount = users.filter((user) => user.role === "Farmacie").length;
+  } catch {
+    usersCount = 0;
+    pharmaciesCount = 0;
+  }
+
   const warehouseCount = getWarehouseCount();
 
   return {
@@ -64,11 +62,33 @@ export default function Sidebar({
   collapsed,
   setCollapsed,
 }: SidebarProps) {
-  const [counts, setCounts] = React.useState(() => getSidebarCounts());
+  const [counts, setCounts] = React.useState({
+    usersCount: 0,
+    warehouseCount: getWarehouseCount(),
+    pharmacyManagementCount: 0,
+    pharmacyStocksCount: 0,
+  });
 
   React.useEffect(() => {
-    const id = window.setInterval(() => setCounts(getSidebarCounts()), 1200);
-    return () => window.clearInterval(id);
+    let active = true;
+
+    const refreshCounts = async () => {
+      const nextCounts = await getSidebarCounts();
+      if (active) {
+        setCounts(nextCounts);
+      }
+    };
+
+    void refreshCounts();
+
+    const id = window.setInterval(() => {
+      void refreshCounts();
+    }, 1200);
+
+    return () => {
+      active = false;
+      window.clearInterval(id);
+    };
   }, []);
 
   const menuItems = [

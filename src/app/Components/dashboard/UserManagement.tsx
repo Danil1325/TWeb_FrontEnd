@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Building2,
   Edit2,
   History,
   Lock,
@@ -8,6 +9,7 @@ import {
   Search,
   Trash2,
   Unlock,
+  User,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -53,10 +55,17 @@ type UserFormData = {
   name: string;
   email: string;
   password: string;
+  confirmPassword: string;
   role: UserRole;
   status: "active" | "inactive";
   phone: string;
   company: string;
+  pharmacyName: string;
+  pharmacyLicense: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
 };
 
 const formatDate = (value?: string | null) => {
@@ -68,20 +77,34 @@ const emptyForm: UserFormData = {
   name: "",
   email: "",
   password: "",
+  confirmPassword: "",
   role: "Farmacie",
   status: "active",
   phone: "",
   company: "",
+  pharmacyName: "",
+  pharmacyLicense: "",
+  address: "",
+  city: "",
+  state: "",
+  zipCode: "",
 };
 
 const toFormData = (user: AdminUser): UserFormData => ({
   name: user.name,
   email: user.email,
   password: "",
+  confirmPassword: "",
   role: user.role,
   status: user.status,
   phone: user.phone ?? "",
   company: user.company ?? "",
+  pharmacyName: user.company ?? "",
+  pharmacyLicense: "",
+  address: "",
+  city: "",
+  state: "",
+  zipCode: "",
 });
 
 const UserFormModal: React.FC<{
@@ -102,6 +125,11 @@ const UserFormModal: React.FC<{
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (mode === "create" && form.password !== form.confirmPassword) {
+      toast.error("Parolele nu coincid.");
+      return;
+    }
+
     setSaving(true);
     try {
       await onSave(form);
@@ -113,7 +141,7 @@ const UserFormModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-xl">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h3 className="text-lg font-bold text-slate-900">
             {mode === "create" ? "Creeaza utilizator" : "Editeaza utilizator"}
@@ -122,64 +150,170 @@ const UserFormModal: React.FC<{
             <X className="w-5 h-5" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Nume"
-              required
-              className="px-3 py-2 border rounded-lg"
-            />
-            <input
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="Email"
-              type="email"
-              required
-              className="px-3 py-2 border rounded-lg"
-            />
-            {mode === "create" && (
-              <input
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="Parola"
-                type="password"
-                minLength={8}
-                required
-                className="px-3 py-2 border rounded-lg"
-              />
-            )}
-            <input
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="Telefon"
-              className="px-3 py-2 border rounded-lg"
-            />
-            <input
-              value={form.company}
-              onChange={(e) => setForm({ ...form, company: e.target.value })}
-              placeholder="Companie"
-              className="px-3 py-2 border rounded-lg"
-            />
-            <CustomSelect
-              value={form.role}
-              onChange={(value) => setForm({ ...form, role: value as UserRole })}
-              options={[
-                { label: "SuperAdmin", value: "SuperAdmin" },
-                { label: "Warehouse", value: "Warehouse" },
-                { label: "Farmacie", value: "Farmacie" },
-              ]}
-            />
-            <CustomSelect
-              value={form.status}
-              onChange={(value) => setForm({ ...form, status: value as "active" | "inactive" })}
-              options={[
-                { label: "Activ", value: "active" },
-                { label: "Inactiv", value: "inactive" },
-              ]}
-            />
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div>
+            <h4 className="text-base font-semibold mb-4 flex items-center gap-2 text-slate-900">
+              <User className="w-5 h-5 text-blue-600" />
+              Personal Information
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>Full Name *</span>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="John Doe"
+                  required
+                  className="w-full px-3 py-2 border rounded-lg font-normal"
+                />
+              </label>
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>Email Address *</span>
+                <input
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="john@pharmacy.com"
+                  type="email"
+                  required
+                  className="w-full px-3 py-2 border rounded-lg font-normal"
+                />
+              </label>
+              {mode === "create" && (
+                <>
+                  <label className="space-y-2 text-sm font-medium text-slate-700">
+                    <span>Password *</span>
+                    <input
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      placeholder="Min. 8 characters"
+                      type="password"
+                      minLength={8}
+                      required
+                      className="w-full px-3 py-2 border rounded-lg font-normal"
+                    />
+                  </label>
+                  <label className="space-y-2 text-sm font-medium text-slate-700">
+                    <span>Confirm Password *</span>
+                    <input
+                      value={form.confirmPassword}
+                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                      placeholder="Re-enter password"
+                      type="password"
+                      minLength={8}
+                      required
+                      className="w-full px-3 py-2 border rounded-lg font-normal"
+                    />
+                  </label>
+                </>
+              )}
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>Role *</span>
+                <CustomSelect
+                  value={form.role}
+                  onChange={(value) => setForm({ ...form, role: value as UserRole })}
+                  options={[
+                    { label: "SuperAdmin", value: "SuperAdmin" },
+                    { label: "Warehouse", value: "Warehouse" },
+                    { label: "Farmacie", value: "Farmacie" },
+                  ]}
+                />
+              </label>
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>Status *</span>
+                <CustomSelect
+                  value={form.status}
+                  onChange={(value) => setForm({ ...form, status: value as "active" | "inactive" })}
+                  options={[
+                    { label: "Activ", value: "active" },
+                    { label: "Inactiv", value: "inactive" },
+                  ]}
+                />
+              </label>
+            </div>
           </div>
+
+          {mode === "create" && (
+            <div>
+              <h4 className="text-base font-semibold mb-4 flex items-center gap-2 text-slate-900">
+                <Building2 className="w-5 h-5 text-blue-600" />
+                Pharmacy Information
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>Pharmacy Name *</span>
+                  <input
+                    value={form.pharmacyName}
+                    onChange={(e) => setForm({ ...form, pharmacyName: e.target.value, company: e.target.value })}
+                    placeholder="Central Pharmacy"
+                    required={form.role === "Farmacie"}
+                    className="w-full px-3 py-2 border rounded-lg font-normal"
+                  />
+                </label>
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>Pharmacy License Number *</span>
+                  <input
+                    value={form.pharmacyLicense}
+                    onChange={(e) => setForm({ ...form, pharmacyLicense: e.target.value })}
+                    placeholder="PH-2024-XXXXX"
+                    required={form.role === "Farmacie"}
+                    className="w-full px-3 py-2 border rounded-lg font-normal"
+                  />
+                </label>
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>Phone Number *</span>
+                  <input
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="(555) 123-4567"
+                    type="tel"
+                    required={form.role === "Farmacie"}
+                    className="w-full px-3 py-2 border rounded-lg font-normal"
+                  />
+                </label>
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>Address *</span>
+                  <input
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    placeholder="123 Main Street"
+                    required={form.role === "Farmacie"}
+                    className="w-full px-3 py-2 border rounded-lg font-normal"
+                  />
+                </label>
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>City *</span>
+                  <input
+                    value={form.city}
+                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                    placeholder="New York"
+                    required={form.role === "Farmacie"}
+                    className="w-full px-3 py-2 border rounded-lg font-normal"
+                  />
+                </label>
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>State *</span>
+                  <input
+                    value={form.state}
+                    onChange={(e) => setForm({ ...form, state: e.target.value })}
+                    placeholder="NY"
+                    required={form.role === "Farmacie"}
+                    className="w-full px-3 py-2 border rounded-lg font-normal"
+                  />
+                </label>
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>ZIP Code *</span>
+                  <input
+                    value={form.zipCode}
+                    onChange={(e) => setForm({ ...form, zipCode: e.target.value })}
+                    placeholder="10001"
+                    required={form.role === "Farmacie"}
+                    className="w-full px-3 py-2 border rounded-lg font-normal"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end gap-3">
             <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
               Anulare
@@ -280,7 +414,13 @@ export const UserManagement: React.FC = () => {
           role: data.role,
           status: data.status,
           phone: data.phone,
-          company: data.company,
+          company: data.company || data.pharmacyName,
+          pharmacyName: data.pharmacyName,
+          pharmacyLicense: data.pharmacyLicense,
+          address: data.address,
+          city: data.city,
+          state: data.state,
+          zipCode: data.zipCode,
         }),
       });
 
