@@ -3,11 +3,13 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, ShoppingCart } from 'lucide-react';
 import { getProductCategories, getStoredProducts } from '../data/productStore';
 import { useCart } from '../context/useCart';
+import { useStock } from '../context/StockContext';
 import { toast } from 'sonner';
 
 export const Products: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { addToCart } = useCart();
+  const { reserveStock } = useStock();
   const products = useMemo(() => getStoredProducts(), []);
   const categories = useMemo(() => getProductCategories(), []);
   
@@ -17,6 +19,7 @@ export const Products: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [stockFilter, setStockFilter] = useState<'all' | 'inStock' | 'outOfStock'>('all');
   const [prescriptionFilter, setPrescriptionFilter] = useState<'all' | 'required' | 'notRequired'>('all');
+  const quantityPresets = [50, 100, 250];
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
@@ -35,14 +38,24 @@ export const Products: React.FC = () => {
     });
   }, [products, searchTerm, selectedCategory, priceRange, stockFilter, prescriptionFilter]);
 
-  const handleAddToCart = (product: typeof products[0]) => {
+  const handleAddToCart = (product: typeof products[0], quantity = 1) => {
+    if (quantity <= 0) {
+      toast.error('Invalid quantity');
+      return;
+    }
+    const reserved = reserveStock(product.id, quantity);
+    if (!reserved) {
+      toast.error('Insufficient stock. Please reduce quantity or try again.');
+      return;
+    }
     addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
-      image: product.image
+      image: product.image,
+      quantity
     });
-    toast.success(`${product.name} added to cart`);
+    toast.success(`${quantity} x ${product.name} added to cart`);
   };
 
   return (
@@ -227,6 +240,20 @@ export const Products: React.FC = () => {
                       {product.inStock ? `${product.stockQuantity} in stock` : 'Out of Stock'}
                     </span>
                   </div>
+                  <div className="mb-2 grid grid-cols-3 gap-2">
+                    {quantityPresets.map((quantity) => (
+                      <button
+                        key={quantity}
+                        type="button"
+                        onClick={() => handleAddToCart(product, quantity)}
+                        disabled={!product.inStock || quantity > product.stockQuantity}
+                        className="rounded border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:bg-transparent"
+                      >
+                        +{quantity}
+                      </button>
+                    ))}
+                  </div>
+
                   <div className="flex gap-2">
                     <Link
                       to={`/product/${product.id}`}
@@ -240,7 +267,7 @@ export const Products: React.FC = () => {
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                     >
                       <ShoppingCart className="w-4 h-4" />
-                      Add
+                      Add 1
                     </button>
                   </div>
                 </div>

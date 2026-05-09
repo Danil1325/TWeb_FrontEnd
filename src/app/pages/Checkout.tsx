@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, CreditCard, Building2, Truck, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCart } from '../context/useCart';
+import { useStock } from '../context/StockContext';
 import type { PharmacyOrder } from '../data/seeder';
 
 const PHARMACY_ORDERS_KEY = 'pharmacyOrders';
@@ -22,7 +23,9 @@ const readOrders = (key: string): PharmacyOrder[] => {
 export const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { items, removeFromCart, updateQuantity, clearCart, totalPrice } = useCart();
+  const { releaseStock, getAvailableStock, reserveStock } = useStock();
   const [step, setStep] = useState<'cart' | 'shipping' | 'payment'>('cart');
+  const quantityPresets = [50, 100, 250];
   
   const [shippingInfo, setShippingInfo] = useState({
     address: '',
@@ -156,25 +159,62 @@ export const Checkout: React.FC = () => {
                   </div>
                   <div className="flex flex-col items-end justify-between">
                     <button
-                      onClick={() => removeFromCart(item.id)}
+                      onClick={() => {
+                        releaseStock(item.id, item.quantity);
+                        removeFromCart(item.id);
+                      }}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
-                    <div className="flex items-center border border-gray-300 rounded">
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        className="px-3 py-1 hover:bg-gray-100"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="px-4 py-1 border-x border-gray-300">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="px-3 py-1 hover:bg-gray-100"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                    <div className="space-y-2">
+                      <div className="flex items-center border border-gray-300 rounded">
+                        <button
+                          onClick={() => {
+                            if (item.quantity > 1) {
+                              releaseStock(item.id, 1);
+                              updateQuantity(item.id, item.quantity - 1);
+                            }
+                          }}
+                          className="px-3 py-1 hover:bg-gray-100"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="px-4 py-1 border-x border-gray-300">{item.quantity}</span>
+                        <button
+                          onClick={() => {
+                            const reserved = reserveStock(item.id, 1);
+                            if (reserved) {
+                              updateQuantity(item.id, item.quantity + 1);
+                            } else {
+                              toast.error('No more stock available');
+                            }
+                          }}
+                          className="px-3 py-1 hover:bg-gray-100"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {quantityPresets.map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => {
+                              const reserved = reserveStock(item.id, preset);
+                              if (reserved) {
+                                updateQuantity(item.id, item.quantity + preset);
+                              } else {
+                                toast.error('Insufficient stock');
+                              }
+                            }}
+                            disabled={getAvailableStock(item.id) < preset}
+                            className="rounded border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:bg-transparent"
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
