@@ -9,7 +9,7 @@ import {
   RefreshCcw,
   ShieldAlert,
 } from "lucide-react";
-import { products } from "../../../data/products";
+import { useProducts } from "../../../context/ProductsContext";
 import { users as seedUsers } from "../../../data/users";
 
 type UserRole = "SuperAdmin" | "Warehouse" | "Farmacie";
@@ -149,6 +149,7 @@ const prettyDateTime = (isoDate: string): string => {
 };
 
 export const PharmacyStocksOverview: React.FC = () => {
+  const { products } = useProducts();
   const [activeSection, setActiveSection] = useState<SectionId>("stock");
   const [snapshotTimestamp] = useState(() => Date.now());
 

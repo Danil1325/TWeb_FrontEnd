@@ -1,7 +1,8 @@
 import React, { type SubmitEventHandler, useMemo, useState } from "react";
 import { Edit2, PackagePlus, Trash2, X } from "lucide-react";
-import { categories as baseCategories, type Product } from "../../data/products";
-import { getStoredProducts, saveStoredProducts } from "../../data/productStore";
+import { PRODUCT_CATEGORIES, toBackendImagePath, type Product, type ProductRequest } from "../../api/products";
+import { useProducts } from "../../context/ProductsContext";
+import { toast } from "sonner";
 
 interface ProductFormData {
   name: string;
@@ -20,11 +21,11 @@ interface ProductFormData {
 }
 
 const defaultImage =
-  "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400";
+  "/images/default-product.png";
 
 const defaultForm: ProductFormData = {
   name: "",
-  category: baseCategories[1] || "Antibiotics",
+  category: PRODUCT_CATEGORIES[1] || "Antibiotics",
   description: "",
   fullDescription: "",
   price: "",
@@ -44,9 +45,10 @@ const ProductFormModal: React.FC<{
   categories: string[];
   initial?: ProductFormData;
   onClose: () => void;
-  onSave: (data: ProductFormData) => void;
+  onSave: (data: ProductFormData) => Promise<void> | void;
 }> = ({ isOpen, title, categories, initial, onClose, onSave }) => {
   const [form, setForm] = useState<ProductFormData>(initial || defaultForm);
+  const [saving, setSaving] = useState(false);
 
   React.useEffect(() => {
     setForm(initial || defaultForm);
@@ -54,9 +56,14 @@ const ProductFormModal: React.FC<{
 
   if (!isOpen) return null;
 
-  const handleSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
-    onSave(form);
+    setSaving(true);
+    try {
+      await onSave(form);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const fieldClass =
@@ -131,7 +138,7 @@ const ProductFormModal: React.FC<{
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Image URL</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Backend image path</label>
               <input
                 value={form.image}
                 onChange={(event) => setForm({ ...form, image: event.target.value })}
@@ -210,8 +217,8 @@ const ProductFormModal: React.FC<{
             <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">
               Cancel
             </button>
-            <button type="submit" className="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700">
-              Save product
+            <button type="submit" disabled={saving} className="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700 disabled:bg-slate-300">
+              {saving ? "Saving..." : "Save product"}
             </button>
           </div>
         </form>
@@ -226,7 +233,7 @@ const mapToForm = (product: Product): ProductFormData => ({
   description: product.description,
   fullDescription: product.fullDescription,
   price: String(product.price),
-  image: product.image,
+  image: toBackendImagePath(product.image),
   stockQuantity: String(product.stockQuantity),
   manufacturer: product.manufacturer,
   activeIngredient: product.activeIngredient || "",
@@ -236,11 +243,10 @@ const mapToForm = (product: Product): ProductFormData => ({
   featured: Boolean(product.featured),
 });
 
-const buildProduct = (data: ProductFormData, existing?: Product): Product => {
+const buildProductRequest = (data: ProductFormData): ProductRequest => {
   const stockQuantity = Number(data.stockQuantity || 0);
 
   return {
-    id: existing?.id || crypto.randomUUID(),
     name: data.name.trim(),
     category: data.category,
     description: data.description.trim(),
@@ -259,37 +265,33 @@ const buildProduct = (data: ProductFormData, existing?: Product): Product => {
 };
 
 export const WarehouseProducts: React.FC = () => {
-  const [items, setItems] = useState<Product[]>(() => getStoredProducts());
+  const { products: items, categories, loading, error, createProduct, updateProduct, deleteProduct } = useProducts();
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
 
   const dashboardCategories = useMemo(() => {
     return Array.from(
-      new Set([...baseCategories.filter((category) => category !== "All Products"), ...items.map((product) => product.category)])
+      new Set([...PRODUCT_CATEGORIES.filter((category) => category !== "All Products"), ...categories.filter((category) => category !== "All Products")])
     );
-  }, [items]);
+  }, [categories]);
 
-  const persist = (next: Product[]) => {
-    setItems(next);
-    saveStoredProducts(next);
-  };
-
-  const handleCreate = (data: ProductFormData) => {
-    const next = [buildProduct(data), ...items];
-    persist(next);
+  const handleCreate = async (data: ProductFormData) => {
+    await createProduct(buildProductRequest(data));
+    toast.success("Produsul a fost creat in baza de date.");
     setCreateOpen(false);
   };
 
-  const handleEdit = (data: ProductFormData) => {
+  const handleEdit = async (data: ProductFormData) => {
     if (!editing) return;
-    const updated = buildProduct(data, editing);
-    persist(items.map((item) => (item.id === editing.id ? updated : item)));
+    await updateProduct(editing.id, buildProductRequest(data));
+    toast.success("Produsul a fost actualizat in baza de date.");
     setEditing(null);
   };
 
-  const handleDelete = (product: Product) => {
+  const handleDelete = async (product: Product) => {
     if (!window.confirm(`Delete product ${product.name}?`)) return;
-    persist(items.filter((item) => item.id !== product.id));
+    await deleteProduct(product.id);
+    toast.success("Produsul a fost sters din baza de date.");
   };
 
   const summary = useMemo(() => {
@@ -348,8 +350,16 @@ export const WarehouseProducts: React.FC = () => {
       <section className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
         <div className="border-b border-slate-200 px-6 py-4">
           <h3 className="text-xl font-semibold text-slate-900">Product list</h3>
-          <p className="mt-1 text-sm text-slate-500">Changes are saved in browser storage and reused across warehouse pages.</p>
+          <p className="mt-1 text-sm text-slate-500">Changes are saved through the backend API in SQL Server.</p>
         </div>
+
+        {loading ? (
+          <div className="px-6 py-4 text-sm text-slate-500">Loading products from database...</div>
+        ) : null}
+
+        {error ? (
+          <div className="px-6 py-4 text-sm text-rose-700">{error}</div>
+        ) : null}
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

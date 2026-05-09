@@ -7,7 +7,8 @@ import {
   Snowflake,
   TimerReset,
 } from "lucide-react";
-import { getStoredProducts } from "../../data/productStore";
+import type { Product } from "../../api/products";
+import { useProducts } from "../../context/ProductsContext";
 
 interface WarehouseStockRow {
   id: string;
@@ -29,7 +30,7 @@ const zoneSnapshots = [
   { id: "COLD", label: "Cold chain", occupancy: 81, bins: 12 },
 ];
 
-const stockRows: WarehouseStockRow[] = getStoredProducts().slice(0, 8).map((product, index) => {
+const buildStockRows = (products: Product[]): WarehouseStockRow[] => products.slice(0, 8).map((product, index) => {
   const threshold = 90 + index * 12;
   const quantity = Math.max(24, product.stockQuantity - index * 67);
   const reserved = 12 + index * 5;
@@ -51,13 +52,6 @@ const stockRows: WarehouseStockRow[] = getStoredProducts().slice(0, 8).map((prod
   };
 });
 
-const replenishmentQueue = stockRows
-  .filter((row) => row.status !== "healthy")
-  .map((row, index) => ({
-    ...row,
-    eta: index === 0 ? "Today, 16:30" : index === 1 ? "Tomorrow, 09:00" : "Tomorrow, 13:45",
-  }));
-
 const movementFeed = [
   { id: "mv-1", type: "Inbound", ref: "ASN-2041", item: "Amoxicillin 500mg", quantity: 120, zone: "B2-04" },
   { id: "mv-2", type: "Allocation", ref: "ORD-1884", item: "Paracetamol 500mg", quantity: 64, zone: "A1-02" },
@@ -66,6 +60,18 @@ const movementFeed = [
 ];
 
 export const WarehouseStock: React.FC = () => {
+  const { products, loading, error } = useProducts();
+  const stockRows = useMemo(() => buildStockRows(products), [products]);
+  const replenishmentQueue = useMemo(
+    () =>
+      stockRows
+        .filter((row) => row.status !== "healthy")
+        .map((row, index) => ({
+          ...row,
+          eta: index === 0 ? "Today, 16:30" : index === 1 ? "Tomorrow, 09:00" : "Tomorrow, 13:45",
+        })),
+    [stockRows]
+  );
   const summary = useMemo(() => {
     const totalUnits = stockRows.reduce((sum, row) => sum + row.quantity, 0);
     const reservedUnits = stockRows.reduce((sum, row) => sum + row.reserved, 0);
@@ -73,7 +79,7 @@ export const WarehouseStock: React.FC = () => {
     const coldChainItems = stockRows.filter((row) => row.storage === "Cold chain").length;
 
     return { totalUnits, reservedUnits, lowStock, coldChainItems };
-  }, []);
+  }, [stockRows]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -106,6 +112,14 @@ export const WarehouseStock: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {loading ? (
+        <div className="rounded-2xl bg-blue-50 p-4 text-sm text-blue-700">Loading stock from database products...</div>
+      ) : null}
+
+      {error ? (
+        <div className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">{error}</div>
+      ) : null}
 
       <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">

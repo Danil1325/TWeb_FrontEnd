@@ -3,12 +3,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Slider from 'react-slick';
 import { ArrowRight, Shield, Truck, Clock, Award, Package } from 'lucide-react';
-import { products } from '../data/products';
 import { ProductCard } from '../Components/ProductCard';
+import { useProducts } from '../context/ProductsContext';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
 export const Home: React.FC = () => {
+  const { products } = useProducts();
   const featuredProducts = products.filter(p => p.featured).slice(0, 6);
 
   const sliderSettings = {

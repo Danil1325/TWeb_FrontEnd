@@ -1,17 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, ShoppingCart } from 'lucide-react';
-import { getProductCategories, getStoredProducts } from '../data/productStore';
 import { useCart } from '../context/useCart';
 import { useStock } from '../context/StockContext';
+import { useProducts } from '../context/ProductsContext';
+import { getProductPath, type Product } from '../api/products';
 import { toast } from 'sonner';
 
 export const Products: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { addToCart } = useCart();
   const { reserveStock } = useStock();
-  const products = useMemo(() => getStoredProducts(), []);
-  const categories = useMemo(() => getProductCategories(), []);
+  const { products, categories, loading, error } = useProducts();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'All Products');
@@ -38,7 +38,7 @@ export const Products: React.FC = () => {
     });
   }, [products, searchTerm, selectedCategory, priceRange, stockFilter, prescriptionFilter]);
 
-  const handleAddToCart = (product: typeof products[0], quantity = 1) => {
+  const handleAddToCart = (product: Product, quantity = 1) => {
     if (quantity <= 0) {
       toast.error('Invalid quantity');
       return;
@@ -65,6 +65,18 @@ export const Products: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Product Catalog</h1>
         <p className="text-gray-600">Browse our comprehensive range of pharmaceutical products</p>
       </div>
+
+      {loading && (
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-blue-700">
+          Loading products from database...
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Search and Filter Toggle */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
@@ -208,7 +220,7 @@ export const Products: React.FC = () => {
                 key={product.id}
                 className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition flex flex-col"
               >
-                <Link to={`/product/${product.id}`} className="block">
+                <Link to={getProductPath(product)} className="block">
                   <div className="aspect-square overflow-hidden bg-gray-100">
                     <img
                       src={product.image}
@@ -226,7 +238,7 @@ export const Products: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <Link to={`/product/${product.id}`}>
+                  <Link to={getProductPath(product)}>
                     <h3 className="font-semibold mb-2 hover:text-blue-600">{product.name}</h3>
                   </Link>
                   <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">{product.description}</p>
@@ -256,7 +268,7 @@ export const Products: React.FC = () => {
 
                   <div className="flex gap-2">
                     <Link
-                      to={`/product/${product.id}`}
+                      to={getProductPath(product)}
                       className="flex-1 px-4 py-2 text-center border border-blue-600 text-blue-600 rounded hover:bg-blue-50"
                     >
                       Details

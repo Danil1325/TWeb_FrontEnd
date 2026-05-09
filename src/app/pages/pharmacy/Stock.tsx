@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Package, Search, PlusCircle, FileDown } from 'lucide-react';
-import { seedPharmacyStock } from '../../data/seeder';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Search, PlusCircle, FileDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useProducts } from '../../context/ProductsContext';
 
 type StockItem = {
   id: string;
@@ -18,29 +18,24 @@ export const Stock: React.FC = () => {
   const [items, setItems] = useState<StockItem[]>([]);
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
+  const { products, loading } = useProducts();
+
+  const productStockItems = useMemo<StockItem[]>(() => {
+    return products.map((product, index) => ({
+      id: product.id,
+      name: product.name,
+      sku: `${product.name.split(' ')[0].toUpperCase().slice(0, 6)}-${index + 1}`,
+      quantity: product.stockQuantity,
+      location: `Shelf ${String.fromCharCode(65 + (index % 6))}${Math.floor(index / 6) + 1}`,
+      expiry: product.category !== 'Medical Devices' && product.category !== 'First Aid'
+        ? new Date(Date.now() + (90 + index * 15) * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+        : null,
+    }));
+  }, [products]);
 
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length >= 15) {
-          setItems(parsed);
-          return;
-        }
-      } catch (e) {
-        console.error('Invalid stock in localStorage', e);
-      }
-    }
-    // seed automatically with stock data (overwrite) so UI shows products by default
-    try {
-      seedPharmacyStock(true);
-      const seeded = localStorage.getItem(STORAGE_KEY);
-      if (seeded) setItems(JSON.parse(seeded));
-    } catch (e) {
-      console.error('Failed to seed pharmacy stock', e);
-    }
-  }, []);
+    setItems(productStockItems);
+  }, [productStockItems]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
@@ -98,6 +93,12 @@ export const Stock: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {loading ? (
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-blue-700">
+          Loading products from database...
+        </div>
+      ) : null}
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">

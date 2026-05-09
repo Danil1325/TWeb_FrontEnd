@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingCart } from 'lucide-react';
-import { Product } from '../data/products';
+import { getProductPath, type Product } from '../api/products';
 interface ProductCardProps {
   product: Product;
   showActions?: boolean;
@@ -34,7 +34,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         >
           <Heart className="h-4 w-4" />
         </button>
-        <Link to={`/product/${product.id}`} className="block">
+        <Link to={getProductPath(product)} className="block">
           <div className={`${compact ? 'h-44' : 'h-56'} overflow-hidden rounded-xl bg-slate-100`}>
             <img
               src={product.image}
@@ -53,7 +53,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        <Link to={`/product/${product.id}`}>
+        <Link to={getProductPath(product)}>
           <h3 className="mb-2 line-clamp-1 h-6 font-semibold text-gray-900">{product.name}</h3>
         </Link>
 
@@ -67,7 +67,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {showActions && (
           <div className="flex gap-2">
             <Link
-              to={`/product/${product.id}`}
+              to={getProductPath(product)}
               className="flex-1 rounded-lg border border-black px-4 py-2 text-center text-black hover:bg-black hover:text-white"
             >
               Details
