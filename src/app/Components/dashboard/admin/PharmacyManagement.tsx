@@ -9,7 +9,7 @@ import {
   Search,
   ShieldAlert,
 } from "lucide-react";
-import { products } from "../../../data/products";
+import { useProducts } from "../../../context/ProductsContext";
 import { users as seedUsers } from "../../../data/users";
 import { CustomSelect } from "../CustomSelect";
 
@@ -96,6 +96,7 @@ const toDisplayDate = (value: string): string => {
 };
 
 export const PharmacyManagement: React.FC = () => {
+  const { products } = useProducts();
   const [search, setSearch] = useState("");
   const [selectedPharmacy, setSelectedPharmacy] = useState<string>(() => {
     const firstPharmacy = parseUsers().find((user) => user.role === "Farmacie");

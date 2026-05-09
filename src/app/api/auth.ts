@@ -30,7 +30,7 @@ export type PharmacyRegistrationRequest = {
   zipCode: string;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5254";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5254";
 
 export const AUTH_TOKEN_KEY = "authToken";
 

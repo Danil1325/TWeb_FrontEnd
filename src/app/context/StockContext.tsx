@@ -1,5 +1,5 @@
-import React, { useState, ReactNode, useContext } from 'react';
-import { getStoredProducts } from '../data/productStore';
+import React, { useEffect, useState, ReactNode, useContext } from 'react';
+import { useProducts } from './ProductsContext';
 
 export interface StockContextType {
   currentStock: Record<string, number>;
@@ -12,16 +12,20 @@ export interface StockContextType {
 const StockContext = React.createContext<StockContextType | undefined>(undefined);
 
 export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const products = getStoredProducts();
-  
-  // Initialize stock from products (hardcoded, ready to be connected to DB)
-  const [currentStock, setCurrentStock] = useState<Record<string, number>>(() => {
-    const stock: Record<string, number> = {};
-    products.forEach(p => {
-      stock[p.id] = p.stockQuantity;
+  const { products } = useProducts();
+  const [currentStock, setCurrentStock] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    setCurrentStock((previous) => {
+      const next: Record<string, number> = {};
+
+      products.forEach((product) => {
+        next[product.id] = previous[product.id] ?? product.stockQuantity;
+      });
+
+      return next;
     });
-    return stock;
-  });
+  }, [products]);
 
   const reserveStock = (productId: string, quantity: number): boolean => {
     const available = currentStock[productId] ?? 0;

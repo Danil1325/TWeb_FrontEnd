@@ -1,21 +1,36 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, ArrowLeft, Package, AlertCircle, CheckCircle, Truck } from 'lucide-react';
-import { getStoredProducts } from '../data/productStore';
 import { useCart } from '../context/useCart';
 import { useStock } from '../context/StockContext';
+import { useProducts } from '../context/ProductsContext';
+import { getProductPath, getProductSlug } from '../api/products';
 import { toast } from 'sonner';
 
 export const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { reserveStock, getAvailableStock } = useStock();
+  const { reserveStock } = useStock();
+  const { products, loading } = useProducts();
   const [quantity, setQuantity] = useState(1);
   const quantityPresets = [50, 100, 250];
-  const products = getStoredProducts();
 
-  const product = products.find(p => p.id === id);
+  const product = products.find(p => p.id === id || getProductSlug(p) === id);
+
+  useEffect(() => {
+    if (product && id === product.id) {
+      navigate(getProductPath(product), { replace: true });
+    }
+  }, [id, navigate, product]);
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold mb-4">Loading product...</h1>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -228,7 +243,7 @@ export const ProductDetails: React.FC = () => {
             {relatedProducts.map(relProduct => (
               <Link
                 key={relProduct.id}
-                to={`/product/${relProduct.id}`}
+                to={getProductPath(relProduct)}
                 className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition"
               >
                 <div className="aspect-square overflow-hidden bg-gray-100">
