@@ -3,13 +3,16 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, ArrowLeft, Package, AlertCircle, CheckCircle, Truck } from 'lucide-react';
 import { getStoredProducts } from '../data/productStore';
 import { useCart } from '../context/useCart';
+import { useStock } from '../context/StockContext';
 import { toast } from 'sonner';
 
 export const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { reserveStock, getAvailableStock } = useStock();
   const [quantity, setQuantity] = useState(1);
+  const quantityPresets = [50, 100, 250];
   const products = getStoredProducts();
 
   const product = products.find(p => p.id === id);
@@ -26,6 +29,15 @@ export const ProductDetails: React.FC = () => {
   }
 
   const handleAddToCart = () => {
+    if (quantity <= 0) {
+      toast.error('Invalid quantity');
+      return;
+    }
+    const reserved = reserveStock(product.id, quantity);
+    if (!reserved) {
+      toast.error('Insufficient stock. Please reduce quantity.');
+      return;
+    }
     addToCart({
       id: product.id,
       name: product.name,
@@ -170,6 +182,19 @@ export const ProductDetails: React.FC = () => {
                     +
                   </button>
                 </div>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {quantityPresets.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setQuantity((current) => Math.min(product.stockQuantity, current + preset))}
+                      disabled={quantity + preset > product.stockQuantity}
+                      className="rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:bg-transparent"
+                    >
+                      +{preset}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="flex-1 w-full sm:w-auto">
                 <label className="block text-sm text-gray-600 mb-2">&nbsp;</label>
@@ -179,7 +204,7 @@ export const ProductDetails: React.FC = () => {
                   className="w-full px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <ShoppingCart className="w-5 h-5" />
-                  Add to Cart
+                  Add to Cart ({quantity})
                 </button>
               </div>
             </div>

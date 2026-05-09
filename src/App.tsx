@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { CartProvider } from "./app/context/CartContext";
+import { StockProvider } from "./app/context/StockContext";
 import { Layout } from "./app/Components/Layout";
 import { AdminLayout } from "./app/Components/dashboard/AdminLayout";
 import { Home } from "./app/pages/Home";
@@ -79,8 +80,9 @@ function PharmacyRouteGuard({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <CartProvider>
-      <Routes>
+    <StockProvider>
+      <CartProvider>
+        <Routes>
         <Route
           path="/admin/*"
           element={
@@ -158,6 +160,7 @@ export default function App() {
         />
       </Routes>
       <Toaster position="top-right" richColors />
-    </CartProvider>
+      </CartProvider>
+    </StockProvider>
   );
 }
