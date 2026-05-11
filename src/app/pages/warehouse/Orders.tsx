@@ -9,14 +9,14 @@ import {
   Truck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { acceptOrder, getPendingOrders, type Order } from "../../api/orders";
+import { acceptOrder, changeOrderStatus, getOrders, type Order } from "../../api/orders";
 
 interface WarehouseOrder {
   id: string;
   pharmacy: string;
-  route: string;
   priority: "Urgent" | "Standard";
-  status: "Picking" | "Packing" | "Quality check" | "Ready to ship";
+  status: string;
+  workflowStatus: WorkflowStatus;
   lineItems: number;
   totes: number;
   picker: string;
@@ -28,34 +28,34 @@ const ongoingOrders: WarehouseOrder[] = [
   {
     id: "ORD-3101",
     pharmacy: "Central Pharmacy",
-    route: "North route",
     priority: "Urgent",
-    status: "Picking",
+    status: "Pending",
+    workflowStatus: "Picking",
     lineItems: 18,
     totes: 6,
-    picker: "Elena M.",
+    picker: "Central Pharmacy",
     departure: "09:15",
   },
   {
     id: "ORD-3102",
     pharmacy: "Green Care",
-    route: "City route",
     priority: "Standard",
-    status: "Packing",
+    status: "Confirmed",
+    workflowStatus: "Packing",
     lineItems: 11,
     totes: 4,
-    picker: "Victor P.",
+    picker: "Green Care",
     departure: "10:00",
   },
   {
     id: "ORD-3103",
     pharmacy: "Family Med",
-    route: "South route",
     priority: "Urgent",
-    status: "Quality check",
+    status: "Processing",
+    workflowStatus: "Quality check",
     lineItems: 24,
     totes: 8,
-    picker: "Ana R.",
+    picker: "Family Med",
     departure: "10:40",
   },
 ];
@@ -73,23 +73,36 @@ const dispatchWindows = [
   { id: "window-3", label: "11:00 - 12:00", route: "South route", capacity: 76 },
 ];
 
-const mapOrderStatusToWarehouseStatus = (status: string): WarehouseOrder["status"] => {
+type WorkflowStatus = "Picking" | "Packing" | "Quality check" | "Ready to ship";
+
+const workflowOptions: WorkflowStatus[] = ["Picking", "Packing", "Quality check", "Ready to ship"];
+
+const activeOrderStatuses = new Set(["pending", "confirmed", "processing", "shipped"]);
+
+const mapOrderStatusToWorkflowStatus = (status: string): WorkflowStatus => {
   const normalized = status.toLowerCase();
   if (normalized === "pending") return "Picking";
   if (normalized === "confirmed") return "Packing";
-  if (normalized === "delivered") return "Ready to ship";
+  if (normalized === "shipped") return "Ready to ship";
   return "Quality check";
+};
+
+const mapWorkflowStatusToOrderStatus = (status: WorkflowStatus) => {
+  if (status === "Picking") return "Pending";
+  if (status === "Packing") return "Confirmed";
+  if (status === "Ready to ship") return "Shipped";
+  return "Processing";
 };
 
 const mapApiOrderToWarehouseOrder = (order: Order): WarehouseOrder => ({
   id: `WH-${order.id.slice(0, 8)}`,
-  pharmacy: `Pharmacy ${order.pharmacyUserId.slice(0, 8)}`,
-  route: "Web checkout",
+  pharmacy: order.pharmacyName || `Pharmacy ${order.pharmacyUserId.slice(0, 8)}`,
   priority: order.itemsCount >= 20 ? "Urgent" : "Standard",
-  status: mapOrderStatusToWarehouseStatus(order.status),
+  status: order.status,
+  workflowStatus: mapOrderStatusToWorkflowStatus(order.status),
   lineItems: order.itemsCount,
   totes: Math.max(1, Math.ceil(order.itemsCount / 4)),
-  picker: "Auto-assigned",
+  picker: order.pharmacyName || `Pharmacy ${order.pharmacyUserId.slice(0, 8)}`,
   departure: "TBD",
   apiOrder: order,
 });
@@ -104,7 +117,8 @@ export const WarehouseOrders: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      setApiOrders(await getPendingOrders());
+      const orders = await getOrders();
+      setApiOrders(orders.filter((order) => activeOrderStatuses.has(order.status.toLowerCase())));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load warehouse orders.");
     } finally {
@@ -126,17 +140,36 @@ export const WarehouseOrders: React.FC = () => {
 
     try {
       const accepted = await acceptOrder(warehouseOrder.apiOrder.id);
-      setApiOrders((current) => current.filter((order) => order.id !== accepted.id));
+      setApiOrders((current) => current.map((order) => (order.id === accepted.id ? accepted : order)));
       toast.success("Order accepted and stock transferred to pharmacy.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not accept order.");
     }
   };
 
+  const handleWorkflowStatusChange = async (warehouseOrder: WarehouseOrder, workflowStatus: WorkflowStatus) => {
+    if (!warehouseOrder.apiOrder) return;
+
+    try {
+      const updatedOrder = await changeOrderStatus(
+        warehouseOrder.apiOrder.id,
+        mapWorkflowStatusToOrderStatus(workflowStatus)
+      );
+      setApiOrders((current) =>
+        activeOrderStatuses.has(updatedOrder.status.toLowerCase())
+          ? current.map((order) => (order.id === updatedOrder.id ? updatedOrder : order))
+          : current.filter((order) => order.id !== updatedOrder.id)
+      );
+      toast.success("Order status updated.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update order status.");
+    }
+  };
+
   const summary = useMemo(() => {
     const activeOrders = allOrders.length;
     const urgentOrders = allOrders.filter((order) => order.priority === "Urgent").length;
-    const readyOrders = allOrders.filter((order) => order.status === "Ready to ship").length;
+    const readyOrders = allOrders.filter((order) => order.workflowStatus === "Ready to ship").length;
     const totalTotes = allOrders.reduce((sum, order) => sum + order.totes, 0);
 
     return { activeOrders, urgentOrders, readyOrders, totalTotes };
@@ -191,7 +224,7 @@ export const WarehouseOrders: React.FC = () => {
             <div>
               <p className="text-sm text-slate-500">QC pending</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">
-                {allOrders.filter((order) => order.status === "Quality check").length}
+                {allOrders.filter((order) => order.workflowStatus === "Quality check").length}
               </p>
             </div>
             <div className="rounded-2xl bg-indigo-100 p-3 text-indigo-700">
@@ -252,17 +285,18 @@ export const WarehouseOrders: React.FC = () => {
             </div>
           </div>
 
+          {error ? (
+            <div className="mb-4 rounded-lg border border-red-100 bg-red-50 p-4 text-sm text-red-600">{error}</div>
+          ) : null}
+
           {loading ? (
             <div className="rounded-lg border border-slate-200 p-4 text-sm text-slate-500">Loading orders...</div>
-          ) : error ? (
-            <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-sm text-red-600">{error}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-slate-500">
                   <tr>
                     <th className="px-4 py-3 text-left">Order</th>
-                    <th className="px-4 py-3 text-left">Route</th>
                     <th className="px-4 py-3 text-left">Load</th>
                     <th className="px-4 py-3 text-left">Picker</th>
                     <th className="px-4 py-3 text-left">Departure</th>
@@ -273,11 +307,11 @@ export const WarehouseOrders: React.FC = () => {
                 <tbody>
                   {allOrders.slice(0, visibleOrdersCount).map((order) => {
                     const statusClasses =
-                      order.status === "Picking"
+                      order.workflowStatus === "Picking"
                         ? "bg-amber-100 text-amber-700"
-                        : order.status === "Packing"
+                        : order.workflowStatus === "Packing"
                           ? "bg-cyan-100 text-cyan-700"
-                          : order.status === "Quality check"
+                          : order.workflowStatus === "Quality check"
                             ? "bg-indigo-100 text-indigo-700"
                             : "bg-emerald-100 text-emerald-700";
 
@@ -286,10 +320,6 @@ export const WarehouseOrders: React.FC = () => {
                         <td className="px-4 py-3">
                           <div className="font-semibold text-slate-900">{order.id}</div>
                           <div className="text-xs text-slate-500">{order.pharmacy}</div>
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">
-                          <div>{order.route}</div>
-                          <div className="text-xs text-slate-500">{order.priority}</div>
                         </td>
                         <td className="px-4 py-3 text-slate-700">
                           <div>{order.lineItems} line items</div>
@@ -303,13 +333,27 @@ export const WarehouseOrders: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          {order.apiOrder ? (
+                          {order.apiOrder && order.status.toLowerCase() === "pending" ? (
                             <button
                               onClick={() => void handleAcceptOrder(order)}
                               className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
                             >
                               Accept order
                             </button>
+                          ) : order.apiOrder ? (
+                            <select
+                              value={order.workflowStatus}
+                              onChange={(event) =>
+                                void handleWorkflowStatusChange(order, event.target.value as WorkflowStatus)
+                              }
+                              className="min-w-36 rounded-md border border-indigo-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                              {workflowOptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
                           ) : (
                             <span className="text-xs text-slate-400">Demo</span>
                           )}

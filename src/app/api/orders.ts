@@ -18,6 +18,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   pharmacyUserId: string;
+  pharmacyName: string;
   supplier: string;
   status: OrderStatus;
   itemsCount: number;
@@ -55,6 +56,11 @@ function normalizeOrder(order: Order): Order {
 
 export async function getMyOrders() {
   const orders = await authFetch<Order[]>("/api/orders/my");
+  return orders.map(normalizeOrder);
+}
+
+export async function getOrders() {
+  const orders = await authFetch<Order[]>("/api/orders");
   return orders.map(normalizeOrder);
 }
 
