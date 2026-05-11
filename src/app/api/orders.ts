@@ -13,7 +13,6 @@ export interface OrderItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
-  createdAt: string;
 }
 
 export interface Order {
@@ -81,6 +80,13 @@ export async function changeOrderStatus(id: string, status: OrderStatus) {
   const order = await authFetch<Order>(`/api/orders/${encodeURIComponent(id)}/change-status`, {
     method: "PATCH",
     body: JSON.stringify({ status }),
+  });
+  return normalizeOrder(order);
+}
+
+export async function acceptOrder(id: string) {
+  const order = await authFetch<Order>(`/api/orders/${encodeURIComponent(id)}/accept`, {
+    method: "PATCH",
   });
   return normalizeOrder(order);
 }

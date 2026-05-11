@@ -9,7 +9,7 @@ import {
   Truck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { changeOrderStatus, getPendingOrders, type Order } from "../../api/orders";
+import { acceptOrder, getPendingOrders, type Order } from "../../api/orders";
 
 interface WarehouseOrder {
   id: string;
@@ -81,12 +81,6 @@ const mapOrderStatusToWarehouseStatus = (status: string): WarehouseOrder["status
   return "Quality check";
 };
 
-const mapWarehouseStatusToOrderStatus = (status: WarehouseOrder["status"]) => {
-  if (status === "Ready to ship") return "Delivered";
-  if (status === "Picking") return "Pending";
-  return "Confirmed";
-};
-
 const mapApiOrderToWarehouseOrder = (order: Order): WarehouseOrder => ({
   id: `WH-${order.id.slice(0, 8)}`,
   pharmacy: `Pharmacy ${order.pharmacyUserId.slice(0, 8)}`,
@@ -127,20 +121,15 @@ export const WarehouseOrders: React.FC = () => {
     [apiOrders]
   );
 
-  const handleManagedStatusChange = async (warehouseOrder: WarehouseOrder, status: WarehouseOrder["status"]) => {
+  const handleAcceptOrder = async (warehouseOrder: WarehouseOrder) => {
     if (!warehouseOrder.apiOrder) return;
 
     try {
-      const nextStatus = mapWarehouseStatusToOrderStatus(status);
-      const updatedOrder = await changeOrderStatus(warehouseOrder.apiOrder.id, nextStatus);
-      setApiOrders((current) =>
-        nextStatus === "Delivered"
-          ? current.filter((order) => order.id !== updatedOrder.id)
-          : current.map((order) => (order.id === updatedOrder.id ? updatedOrder : order))
-      );
-      toast.success("Order status updated.");
+      const accepted = await acceptOrder(warehouseOrder.apiOrder.id);
+      setApiOrders((current) => current.filter((order) => order.id !== accepted.id));
+      toast.success("Order accepted and stock transferred to pharmacy.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not update order status.");
+      toast.error(err instanceof Error ? err.message : "Could not accept order.");
     }
   };
 
@@ -278,6 +267,7 @@ export const WarehouseOrders: React.FC = () => {
                     <th className="px-4 py-3 text-left">Picker</th>
                     <th className="px-4 py-3 text-left">Departure</th>
                     <th className="px-4 py-3 text-left">Status</th>
+                    <th className="px-4 py-3 text-left">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -308,23 +298,20 @@ export const WarehouseOrders: React.FC = () => {
                         <td className="px-4 py-3 text-slate-700">{order.picker}</td>
                         <td className="px-4 py-3 text-slate-700">{order.departure}</td>
                         <td className="px-4 py-3">
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClasses}`}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
                           {order.apiOrder ? (
-                            <select
-                              value={order.status}
-                              onChange={(e) =>
-                                void handleManagedStatusChange(order, e.target.value as WarehouseOrder["status"])
-                              }
-                              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            <button
+                              onClick={() => void handleAcceptOrder(order)}
+                              className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
                             >
-                              <option>Picking</option>
-                              <option>Packing</option>
-                              <option>Quality check</option>
-                              <option>Ready to ship</option>
-                            </select>
+                              Accept order
+                            </button>
                           ) : (
-                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClasses}`}>
-                              {order.status}
-                            </span>
+                            <span className="text-xs text-slate-400">Demo</span>
                           )}
                         </td>
                       </tr>
