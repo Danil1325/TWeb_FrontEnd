@@ -8,10 +8,8 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react";
-import type { PharmacyOrder } from "../../data/seeder";
-
-const PHARMACY_ORDERS_KEY = "pharmacyOrders";
-const ORDERS_LIST_KEY = "ordersList";
+import { toast } from "sonner";
+import { changeOrderStatus, getPendingOrders, type Order } from "../../api/orders";
 
 interface WarehouseOrder {
   id: string;
@@ -23,34 +21,8 @@ interface WarehouseOrder {
   totes: number;
   picker: string;
   departure: string;
-  sourceId?: string;
-  isManaged?: boolean;
+  apiOrder?: Order;
 }
-
-const parsePharmacyOrders = (key: string): PharmacyOrder[] => {
-  const raw = localStorage.getItem(key);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
-const mapPharmacyToWarehouseStatus = (status: string): WarehouseOrder["status"] => {
-  const normalizedStatus = String(status || "").toLowerCase();
-  if (normalizedStatus === "pending") return "Picking";
-  if (normalizedStatus === "confirmed") return "Packing";
-  if (normalizedStatus === "delivered") return "Ready to ship";
-  return "Quality check";
-};
-
-const mapWarehouseToPharmacyStatus = (status: WarehouseOrder["status"]): PharmacyOrder["status"] => {
-  if (status === "Ready to ship") return "Delivered";
-  if (status === "Picking") return "Pending";
-  return "Confirmed";
-};
 
 const ongoingOrders: WarehouseOrder[] = [
   {
@@ -86,17 +58,6 @@ const ongoingOrders: WarehouseOrder[] = [
     picker: "Ana R.",
     departure: "10:40",
   },
-  {
-    id: "ORD-3104",
-    pharmacy: "Health Point",
-    route: "East route",
-    priority: "Standard",
-    status: "Ready to ship",
-    lineItems: 9,
-    totes: 3,
-    picker: "Sergiu D.",
-    departure: "11:20",
-  },
 ];
 
 const orderSteps = [
@@ -112,78 +73,76 @@ const dispatchWindows = [
   { id: "window-3", label: "11:00 - 12:00", route: "South route", capacity: 76 },
 ];
 
+const mapOrderStatusToWarehouseStatus = (status: string): WarehouseOrder["status"] => {
+  const normalized = status.toLowerCase();
+  if (normalized === "pending") return "Picking";
+  if (normalized === "confirmed") return "Packing";
+  if (normalized === "delivered") return "Ready to ship";
+  return "Quality check";
+};
+
+const mapWarehouseStatusToOrderStatus = (status: WarehouseOrder["status"]) => {
+  if (status === "Ready to ship") return "Delivered";
+  if (status === "Picking") return "Pending";
+  return "Confirmed";
+};
+
+const mapApiOrderToWarehouseOrder = (order: Order): WarehouseOrder => ({
+  id: `WH-${order.id.slice(0, 8)}`,
+  pharmacy: `Pharmacy ${order.pharmacyUserId.slice(0, 8)}`,
+  route: "Web checkout",
+  priority: order.itemsCount >= 20 ? "Urgent" : "Standard",
+  status: mapOrderStatusToWarehouseStatus(order.status),
+  lineItems: order.itemsCount,
+  totes: Math.max(1, Math.ceil(order.itemsCount / 4)),
+  picker: "Auto-assigned",
+  departure: "TBD",
+  apiOrder: order,
+});
+
 export const WarehouseOrders: React.FC = () => {
-  const [allOrders, setAllOrders] = useState<WarehouseOrder[]>(ongoingOrders);
+  const [apiOrders, setApiOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [visibleOrdersCount, setVisibleOrdersCount] = useState<5 | 10 | 15>(10);
 
-  const loadOrders = () => {
-    const fromOrdersList = parsePharmacyOrders(ORDERS_LIST_KEY);
-    const fromPharmacyOrders = parsePharmacyOrders(PHARMACY_ORDERS_KEY);
-    const mergedSource = [...fromOrdersList, ...fromPharmacyOrders];
-
-    if (!mergedSource.length) {
-      setAllOrders(ongoingOrders);
-      return;
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setApiOrders(await getPendingOrders());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load warehouse orders.");
+    } finally {
+      setLoading(false);
     }
-
-    const uniqueById = new Map<string, PharmacyOrder>();
-    mergedSource.forEach((order) => uniqueById.set(order.id, order));
-
-    const mapped: WarehouseOrder[] = Array.from(uniqueById.values()).map((order) => ({
-      id: `WH-${order.id}`,
-      sourceId: order.id,
-      isManaged: true,
-      pharmacy: "Pharmacy Portal",
-      route: "Web checkout",
-      priority: order.items >= 20 ? "Urgent" : "Standard",
-      status: mapPharmacyToWarehouseStatus(order.status),
-      lineItems: order.items,
-      totes: Math.max(1, Math.ceil(order.items / 4)),
-      picker: "Auto-assigned",
-      departure: "TBD",
-    }));
-
-    setAllOrders([...mapped, ...ongoingOrders]);
-  };
-
-  const handleManagedStatusChange = (warehouseOrder: WarehouseOrder, status: WarehouseOrder["status"]) => {
-    if (!warehouseOrder.sourceId) return;
-
-    setAllOrders((prev) =>
-      prev.map((order) =>
-        order.id === warehouseOrder.id ? { ...order, status } : order
-      )
-    );
-
-    const nextPharmacyStatus = mapWarehouseToPharmacyStatus(status);
-    const updateBySourceId = (list: PharmacyOrder[]) =>
-      list.map((order) =>
-        order.id === warehouseOrder.sourceId ? { ...order, status: nextPharmacyStatus } : order
-      );
-
-    const nextOrdersList = updateBySourceId(parsePharmacyOrders(ORDERS_LIST_KEY));
-    const nextPharmacyOrders = updateBySourceId(parsePharmacyOrders(PHARMACY_ORDERS_KEY));
-
-    localStorage.setItem(ORDERS_LIST_KEY, JSON.stringify(nextOrdersList));
-    localStorage.setItem(PHARMACY_ORDERS_KEY, JSON.stringify(nextPharmacyOrders));
-    window.dispatchEvent(new Event("orders-list-updated"));
-    window.dispatchEvent(new Event("pharmacy-orders-updated"));
   };
 
   useEffect(() => {
-    loadOrders();
-
-    const handleUpdated = () => loadOrders();
-    window.addEventListener("orders-list-updated", handleUpdated);
-    window.addEventListener("pharmacy-orders-updated", handleUpdated);
-    window.addEventListener("storage", handleUpdated);
-
-    return () => {
-      window.removeEventListener("orders-list-updated", handleUpdated);
-      window.removeEventListener("pharmacy-orders-updated", handleUpdated);
-      window.removeEventListener("storage", handleUpdated);
-    };
+    void loadOrders();
   }, []);
+
+  const allOrders = useMemo(
+    () => [...apiOrders.map(mapApiOrderToWarehouseOrder), ...ongoingOrders],
+    [apiOrders]
+  );
+
+  const handleManagedStatusChange = async (warehouseOrder: WarehouseOrder, status: WarehouseOrder["status"]) => {
+    if (!warehouseOrder.apiOrder) return;
+
+    try {
+      const nextStatus = mapWarehouseStatusToOrderStatus(status);
+      const updatedOrder = await changeOrderStatus(warehouseOrder.apiOrder.id, nextStatus);
+      setApiOrders((current) =>
+        nextStatus === "Delivered"
+          ? current.filter((order) => order.id !== updatedOrder.id)
+          : current.map((order) => (order.id === updatedOrder.id ? updatedOrder : order))
+      );
+      toast.success("Order status updated.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update order status.");
+    }
+  };
 
   const summary = useMemo(() => {
     const activeOrders = allOrders.length;
@@ -202,7 +161,7 @@ export const WarehouseOrders: React.FC = () => {
           <div className="max-w-3xl">
             <h2 className="text-3xl font-bold">Control picking, packing and dispatch for pharmacy orders</h2>
             <p className="mt-3 text-sm text-slate-200">
-              Follow each outbound order through the active workflow and keep dispatch windows aligned with route capacity.
+              Pharmacy orders now arrive from the backend API and can be accepted by the warehouse team.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
@@ -230,8 +189,8 @@ export const WarehouseOrders: React.FC = () => {
         <article className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500">Picking waves</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">3</p>
+              <p className="text-sm text-slate-500">New API orders</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{apiOrders.length}</p>
             </div>
             <div className="rounded-2xl bg-cyan-100 p-3 text-cyan-700">
               <Boxes className="h-6 w-6" />
@@ -286,6 +245,9 @@ export const WarehouseOrders: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 text-sm text-slate-600">
+              <button onClick={() => void loadOrders()} className="rounded-md border border-slate-200 px-3 py-1 font-medium text-slate-700 hover:bg-slate-50">
+                Refresh
+              </button>
               <label htmlFor="orders-view-count" className="font-medium text-slate-700">Show</label>
               <select
                 id="orders-view-count"
@@ -301,71 +263,77 @@ export const WarehouseOrders: React.FC = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-500">
-                <tr>
-                  <th className="px-4 py-3 text-left">Order</th>
-                  <th className="px-4 py-3 text-left">Route</th>
-                  <th className="px-4 py-3 text-left">Load</th>
-                  <th className="px-4 py-3 text-left">Picker</th>
-                  <th className="px-4 py-3 text-left">Departure</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allOrders.slice(0, visibleOrdersCount).map((order) => {
-                  const statusClasses =
-                    order.status === "Picking"
-                      ? "bg-amber-100 text-amber-700"
-                      : order.status === "Packing"
-                        ? "bg-cyan-100 text-cyan-700"
-                        : order.status === "Quality check"
-                          ? "bg-indigo-100 text-indigo-700"
-                          : "bg-emerald-100 text-emerald-700";
+          {loading ? (
+            <div className="rounded-lg border border-slate-200 p-4 text-sm text-slate-500">Loading orders...</div>
+          ) : error ? (
+            <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-sm text-red-600">{error}</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3 text-left">Order</th>
+                    <th className="px-4 py-3 text-left">Route</th>
+                    <th className="px-4 py-3 text-left">Load</th>
+                    <th className="px-4 py-3 text-left">Picker</th>
+                    <th className="px-4 py-3 text-left">Departure</th>
+                    <th className="px-4 py-3 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allOrders.slice(0, visibleOrdersCount).map((order) => {
+                    const statusClasses =
+                      order.status === "Picking"
+                        ? "bg-amber-100 text-amber-700"
+                        : order.status === "Packing"
+                          ? "bg-cyan-100 text-cyan-700"
+                          : order.status === "Quality check"
+                            ? "bg-indigo-100 text-indigo-700"
+                            : "bg-emerald-100 text-emerald-700";
 
-                  return (
-                    <tr key={order.id} className="border-t border-slate-200 align-top">
-                      <td className="px-4 py-3">
-                        <div className="font-semibold text-slate-900">{order.id}</div>
-                        <div className="text-xs text-slate-500">{order.pharmacy}</div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">
-                        <div>{order.route}</div>
-                        <div className="text-xs text-slate-500">{order.priority}</div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">
-                        <div>{order.lineItems} line items</div>
-                        <div className="text-xs text-slate-500">{order.totes} totes</div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">{order.picker}</td>
-                      <td className="px-4 py-3 text-slate-700">{order.departure}</td>
-                      <td className="px-4 py-3">
-                        {order.isManaged ? (
-                          <select
-                            value={order.status}
-                            onChange={(e) =>
-                              handleManagedStatusChange(order, e.target.value as WarehouseOrder["status"])
-                            }
-                            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          >
-                            <option>Picking</option>
-                            <option>Packing</option>
-                            <option>Quality check</option>
-                            <option>Ready to ship</option>
-                          </select>
-                        ) : (
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClasses}`}>
-                            {order.status}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                    return (
+                      <tr key={order.id} className="border-t border-slate-200 align-top">
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-slate-900">{order.id}</div>
+                          <div className="text-xs text-slate-500">{order.pharmacy}</div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-700">
+                          <div>{order.route}</div>
+                          <div className="text-xs text-slate-500">{order.priority}</div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-700">
+                          <div>{order.lineItems} line items</div>
+                          <div className="text-xs text-slate-500">{order.totes} totes</div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-700">{order.picker}</td>
+                        <td className="px-4 py-3 text-slate-700">{order.departure}</td>
+                        <td className="px-4 py-3">
+                          {order.apiOrder ? (
+                            <select
+                              value={order.status}
+                              onChange={(e) =>
+                                void handleManagedStatusChange(order, e.target.value as WarehouseOrder["status"])
+                              }
+                              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                              <option>Picking</option>
+                              <option>Packing</option>
+                              <option>Quality check</option>
+                              <option>Ready to ship</option>
+                            </select>
+                          ) : (
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClasses}`}>
+                              {order.status}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </article>
 
         <div className="space-y-6">
