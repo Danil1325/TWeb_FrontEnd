@@ -4,27 +4,14 @@ import { Trash2, Plus, Minus, CreditCard, Building2, Truck, Package } from 'luci
 import { toast } from 'sonner';
 import { useCart } from '../context/useCart';
 import { useStock } from '../context/StockContext';
-import type { PharmacyOrder } from '../data/seeder';
-
-const PHARMACY_ORDERS_KEY = 'pharmacyOrders';
-const ORDERS_LIST_KEY = 'ordersList';
-
-const readOrders = (key: string): PharmacyOrder[] => {
-  const raw = localStorage.getItem(key);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
+import { createMyOrder } from '../api/orders';
 
 export const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { items, removeFromCart, updateQuantity, clearCart, totalPrice } = useCart();
   const { releaseStock, getAvailableStock, reserveStock } = useStock();
   const [step, setStep] = useState<'cart' | 'shipping' | 'payment'>('cart');
+  const [placingOrder, setPlacingOrder] = useState(false);
   const quantityPresets = [50, 100, 250];
   
   const [shippingInfo, setShippingInfo] = useState({
@@ -47,7 +34,7 @@ export const Checkout: React.FC = () => {
   const tax = totalPrice * 0.08;
   const finalTotal = totalPrice + shippingCost + tax;
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     const userRole = (localStorage.getItem('userRole') || '').toLowerCase();
     const userType = (localStorage.getItem('userType') || '').toLowerCase();
     const isPharmacyUser =
@@ -56,44 +43,36 @@ export const Checkout: React.FC = () => {
       userType === 'pharmacy' ||
       userType === 'farmacie';
 
-    if (isPharmacyUser || localStorage.getItem('isLoggedIn') === 'true') {
-      const ordersList = readOrders(ORDERS_LIST_KEY);
-      const pharmacyOrders = readOrders(PHARMACY_ORDERS_KEY);
+    if (!isPharmacyUser) {
+      toast.error('Only pharmacy users can place product orders.');
+      return;
+    }
 
+    try {
+      setPlacingOrder(true);
       const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-      const newOrder: PharmacyOrder = {
-        id: `PH-ORD-${Date.now().toString().slice(-6)}`,
+      await createMyOrder({
         supplier: 'Warehouse Central',
         status: 'Pending',
-        items: itemCount,
-        total: `$${finalTotal.toFixed(2)}`,
+        itemsCount: itemCount,
+        total: totalPrice,
         date: new Date().toISOString().split('T')[0],
-        notes: `Placed from checkout by ${localStorage.getItem('userEmail') || 'pharmacy user'}`,
-      };
+        notes: `Delivery: ${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.state} ${shippingInfo.zipCode}. Method: ${shippingInfo.deliveryMethod}. Payment: ${paymentInfo.method}.`,
+        items: items.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+          unitPrice: item.price,
+        })),
+      });
 
-      // Step 1: append in the global orders list
-      localStorage.setItem(ORDERS_LIST_KEY, JSON.stringify([newOrder, ...ordersList]));
-      // Step 2: mirror the order in pharmacy orders
-      localStorage.setItem(PHARMACY_ORDERS_KEY, JSON.stringify([newOrder, ...pharmacyOrders]));
-      window.dispatchEvent(new Event('orders-list-updated'));
-      window.dispatchEvent(new Event('pharmacy-orders-updated'));
+      toast.success('Order placed successfully! Warehouse will review it shortly.');
+      clearCart();
+      navigate('/pharmacy/orders');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not place order.');
+    } finally {
+      setPlacingOrder(false);
     }
-
-    toast.success('Order placed successfully! You will receive a confirmation email shortly.');
-    clearCart();
-    if (isPharmacyUser) {
-      setStep('cart');
-      return;
-    }
-    if (userRole === 'admin') {
-      navigate('/admin/dashboard');
-      return;
-    }
-    if (userRole === 'warehouse') {
-      navigate('/warehouse/dashboard');
-      return;
-    }
-    navigate('/');
   };
 
   if (items.length === 0 && step === 'cart') {
@@ -466,9 +445,10 @@ export const Checkout: React.FC = () => {
               <div className="space-y-2">
                 <button
                   onClick={handlePlaceOrder}
-                  className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700"
+                  disabled={placingOrder}
+                  className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400"
                 >
-                  Place Order
+                  {placingOrder ? 'Placing Order...' : 'Place Order'}
                 </button>
                 <button
                   onClick={() => setStep('shipping')}
