@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Search, PlusCircle, FileDown } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search, FileDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useProducts } from '../../context/ProductsContext';
+import { getPharmacyStocks } from '../../api/pharmacy-stocks';
 
 type StockItem = {
   id: string;
@@ -12,46 +12,39 @@ type StockItem = {
   expiry?: string | null;
 };
 
-const STORAGE_KEY = 'pharmacyStock';
-
 export const Stock: React.FC = () => {
   const [items, setItems] = useState<StockItem[]>([]);
   const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { products, loading } = useProducts();
-
-  const productStockItems = useMemo<StockItem[]>(() => {
-    return products.map((product, index) => ({
-      id: product.id,
-      name: product.name,
-      sku: `${product.name.split(' ')[0].toUpperCase().slice(0, 6)}-${index + 1}`,
-      quantity: product.stockQuantity,
-      location: `Shelf ${String.fromCharCode(65 + (index % 6))}${Math.floor(index / 6) + 1}`,
-      expiry: product.category !== 'Medical Devices' && product.category !== 'First Aid'
-        ? new Date(Date.now() + (90 + index * 15) * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-        : null,
-    }));
-  }, [products]);
 
   useEffect(() => {
-    setItems(productStockItems);
-  }, [productStockItems]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
-
-  const addDemoItem = () => {
-    const next: StockItem = {
-      id: `STK-${Math.floor(Math.random() * 900 + 100)}`,
-      name: 'New Item',
-      sku: 'NEW-SKU',
-      quantity: Math.floor(Math.random() * 50) + 1,
-      location: 'Unknown',
-      expiry: null,
+    const loadStock = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const pharmacyUserId = localStorage.getItem('userId');
+        const stocks = await getPharmacyStocks(pharmacyUserId);
+        setItems(stocks.map((stock, index) => ({
+          id: stock.id,
+          name: stock.productName,
+          sku: `${stock.productName.split(' ')[0].toUpperCase().slice(0, 6)}-${index + 1}`,
+          quantity: stock.qtyAvailable,
+          location: `Pharmacy shelf ${String.fromCharCode(65 + (index % 6))}${Math.floor(index / 6) + 1}`,
+          expiry: stock.category !== 'Medical Devices' && stock.category !== 'First Aid'
+            ? new Date(Date.now() + (90 + index * 15) * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+            : null,
+        })));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not load pharmacy stock.');
+      } finally {
+        setLoading(false);
+      }
     };
-    setItems((s) => [next, ...s]);
-  };
+
+    void loadStock();
+  }, []);
 
   const filtered = items.filter((it) => it.name.toLowerCase().includes(query.toLowerCase()) || (it.sku || '').toLowerCase().includes(query.toLowerCase()));
 
@@ -72,9 +65,6 @@ export const Stock: React.FC = () => {
             />
             <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400" />
           </div>
-          <button onClick={addDemoItem} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
-            <PlusCircle className="w-4 h-4" /> Add Item
-          </button>
           <button onClick={() => {
             // export filtered CSV
             const toExport = filtered;
@@ -96,7 +86,13 @@ export const Stock: React.FC = () => {
 
       {loading ? (
         <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-blue-700">
-          Loading products from database...
+          Loading pharmacy stock from database...
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-red-700">
+          {error}
         </div>
       ) : null}
 

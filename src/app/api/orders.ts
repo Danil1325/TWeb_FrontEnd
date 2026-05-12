@@ -13,12 +13,12 @@ export interface OrderItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
-  createdAt: string;
 }
 
 export interface Order {
   id: string;
   pharmacyUserId: string;
+  pharmacyName: string;
   supplier: string;
   status: OrderStatus;
   itemsCount: number;
@@ -59,6 +59,11 @@ export async function getMyOrders() {
   return orders.map(normalizeOrder);
 }
 
+export async function getOrders() {
+  const orders = await authFetch<Order[]>("/api/orders");
+  return orders.map(normalizeOrder);
+}
+
 export async function getPendingOrders() {
   const orders = await authFetch<Order[]>("/api/orders/pending");
   return orders.map(normalizeOrder);
@@ -81,6 +86,13 @@ export async function changeOrderStatus(id: string, status: OrderStatus) {
   const order = await authFetch<Order>(`/api/orders/${encodeURIComponent(id)}/change-status`, {
     method: "PATCH",
     body: JSON.stringify({ status }),
+  });
+  return normalizeOrder(order);
+}
+
+export async function acceptOrder(id: string) {
+  const order = await authFetch<Order>(`/api/orders/${encodeURIComponent(id)}/accept`, {
+    method: "PATCH",
   });
   return normalizeOrder(order);
 }
